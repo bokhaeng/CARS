@@ -1,1 +1,1 @@
-# CARS (Comprehensive Automobile Research Simulator)
+# CARS (Comprehensive Automobile Emissions Research Simulator)
