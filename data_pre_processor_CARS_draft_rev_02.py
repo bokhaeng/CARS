@@ -51,16 +51,29 @@ Emis_Factor_list        = ['gasoline.csv','diesel.csv','cng.csv','lpg.csv']
 avg_SPD_Dist_file      = 'avgSpeedDistribution_rev_00.csv'
 ambient_temp = 15.0
 plot_24 = 'no '#'yes'
-#link_shape              = '/shapes'+'/GIS Korea Road Link Activity Data'+ \
-#                          '/ITS Standard Road Links and Nodes'+'/SK_Link_WGS84_CG.shp'
-
-link_shape              = '/shapes/GIS Korea Road Link Activity Data'+ \
-                          '/shape_seoul/seoul_eup_road_by_county_UTM52N.shp'
-link_shape_att          = ['LINK_ID'  , 'EMD_CD' , 'EMD_ENG_NM', 'ROAD_NAME',
-                           'ROAD_RANK', 'MAX_SPD', 'length_2',]
+link_shape              = '/shapes'+'/GIS Korea Road Link Activity Data'+ \
+                          '/shape_seoul'+'/seoul_eup_links_Avg_VKT_UTM52N.shp'
+                          
+link_shape_att          = ['link_id'  , 'EMD_CD' , 'EMD_ENG_NM', 'EMD_KOR_NM',
+                           'road_type', 'speed', 'length_2', 'Avg_VKT']
+#
+#link_shape              = '/shapes/GIS Korea Road Link Activity Data'+ \
+#                          '/shape_seoul/seoul_eup_road_by_county_UTM52N.shp'
+#link_shape_att          = ['LINK_ID'  , 'EMD_CD' , 'EMD_ENG_NM', 'ROAD_NAME',
+#                           'ROAD_RANK', 'MAX_SPD', 'length_2', 'Avg_VKT']
 
 county_shape              = '/shapes/GIS Korea Road Link Activity Data'+ \
                           '/shape_seoul/seoul_eup_UTM52N.shp'
+
+
+#link_shape              = '/shapes/GIS Korea Road Link Activity Data'+ \
+#                          '/shape_soul_gyeonggi/soul_gyeonggi_Links_UTM52N.shp'
+#link_shape_att          = ['link_id'  , 'EMD_CD' , 'EMD_ENG_NM', 'EMD_ENG_NM',
+#                           'link_type', 'speed', 'length',]
+#
+#county_shape              = '/shapes/GIS Korea Road Link Activity Data'+ \
+#                          '/shape_soul_gyeonggi/soul_gyeonggi_eup_UTM52N.shp'
+
                           
 temporal_profile_folder = input_dir+'/temporal_profile'
 temporal_profile_file   = 'temporal_profile_SK.csv'
@@ -71,7 +84,7 @@ temp = np.asarray([.0094, .0060, .0050, .0065, .0126, .0347, .0591, .0605, .0558
 
 grid_size = 1000
 
-activity_file           = 'seoul_2017.csv' #'seoul_all.csv' #  #'activity_data.csv'
+activity_file           =  'seoul_2017.csv' #'seoul_gyeonggi_AD.csv' #'seoul_all.csv' #  #'activity_data.csv'
 
 class EmissionFactor_table:
     def __init__(self, dataframe, name ):
@@ -103,6 +116,15 @@ class EF_Speed_Distribution:
         self.data      = SPD_dataframe
         self.spd       = Speeds
         self.spd_bins  = Speed_Bins
+
+class Emissions_table:
+    def __init__(self, County_Emissions, Road_Emissions, County_Emissions_GeoRef, County, Years):
+        self.county_emis = County_Emissions
+        self.road_emis   = Road_Emissions
+        self.county_geo  = County_Emissions_GeoRef
+        self.county      = County
+        self.years       = Years
+
 
 # =============================================================================
 # Function to read the Fleet Mix
@@ -216,7 +238,7 @@ def read_activity_data_csv_SK(input_dir, ad_file, sep = ';'):
         print ('')
         print ('Reading Activity Data table ...')
         print (name)
-        activity_data = (pd.read_csv(name, sep = sep)).fillna(0)
+        activity_data = (pd.read_csv(name, sep = sep, encoding = 'utf-8')).fillna(0)
         activity_data.loc[:,'Vehicle'] = activity_data.loc[:,'Vehicle'].str.lower()
         activity_data.loc[:,'Fuel']    = activity_data.loc[:,'Fuel'].str.lower()
         activity_data.loc[:,'Types']   = activity_data.loc[:,'Types'].str.lower()
@@ -260,7 +282,7 @@ AD_SK = read_activity_data_csv_SK(input_dir, activity_file, sep = ',')
 def roads_grid_surrogate_inf(input_dir, file_name, Link_ID_attr, 
                          Region_Code, Region_Name,
                          RD_name_attr, RD_type_attr, 
-                         Speed_attr, Link_length, Unit_meters = True):
+                         Speed_attr, Link_length, VKT_attr, Unit_meters = True):
     start_time = time.time()
     
     Link_ID_attr       = Link_ID_attr
@@ -270,6 +292,7 @@ def roads_grid_surrogate_inf(input_dir, file_name, Link_ID_attr,
     RD_type_attr       = RD_type_attr
     Speed_attr         = Speed_attr
     Link_length        = Link_length
+    VKT_attr           = VKT_attr
     file_name          = link_shape
 
     shp_file = '{0}{1}'.format(input_dir,file_name)
@@ -281,7 +304,7 @@ def roads_grid_surrogate_inf(input_dir, file_name, Link_ID_attr,
         prj = [l.strip() for l in open(prj_file,'r')][0]
         lnk_shp = gpd.read_file(shp_file)
         out_roads = lnk_shp.loc[:,['geometry',Link_ID_attr, Region_CD, Region_NM, 
-                                   RD_name_attr, RD_type_attr, Speed_attr, Link_length]]
+                                   RD_name_attr, RD_type_attr, Speed_attr, Link_length, VKT_attr]]
         
         number_links = np.arange(0,len(out_roads))
         # changing the name of columns to keep a standard
@@ -292,6 +315,7 @@ def roads_grid_surrogate_inf(input_dir, file_name, Link_ID_attr,
         out_roads = out_roads.rename(columns={RD_type_attr       : 'road_type'})
         out_roads = out_roads.rename(columns={Speed_attr         : 'max_speed'})
         out_roads = out_roads.rename(columns={Link_length        : 'link_length'})
+        out_roads = out_roads.rename(columns={VKT_attr           : 'vkt_avg'})
         out_roads['number_links']  = number_links
     
         out_roads['activity_data'] = (out_roads['link_length'] * 0.0).astype(float)
@@ -306,6 +330,7 @@ def roads_grid_surrogate_inf(input_dir, file_name, Link_ID_attr,
         out_roads['total_area']    = out_roads.area
         out_roads['link_split_total']    = (out_roads['link_length'] * 0.0).astype(float)
         out_roads['link_split_county']    = (out_roads['link_length'] * 0.0).astype(float)
+        out_roads['vkt_split_county']    = (out_roads['link_length'] * 0.0).astype(float)
         reduc = 0.6                                  #60% reduction as BH asked
         rt = {101 : 80 *reduc, 102 : 60 *reduc, 103 : 60 *reduc, 104 : 50 *reduc,   #60% reduction as BH asked
               105 : 30 *reduc, 106 : 30 *reduc, 107 : 30 *reduc, 108 : 30 *reduc}
@@ -314,6 +339,11 @@ def roads_grid_surrogate_inf(input_dir, file_name, Link_ID_attr,
             aux_split_county = out_roads.link_length.loc[out_roads.region_cd   == igeocd].values / \
                  (out_roads.link_length.loc[out_roads.region_cd  == igeocd]).sum()
             out_roads.loc[out_roads.region_cd == igeocd, ['link_split_county']] = aux_split_county
+            
+            vkt_split_county = out_roads.vkt_avg.loc[out_roads.region_cd   == igeocd].values / \
+                 (out_roads.vkt_avg.loc[out_roads.region_cd  == igeocd]).sum()
+            out_roads.loc[out_roads.region_cd == igeocd, ['vkt_split_county']] = vkt_split_county
+
             
         aux_split_total = out_roads.link_length.values / out_roads.link_length.sum()
         out_roads.loc[:,['link_split_total']] = aux_split_total
@@ -377,7 +407,7 @@ def roads_grid_surrogate_inf(input_dir, file_name, Link_ID_attr,
 roads_RGS = roads_grid_surrogate_inf(input_dir,link_shape, link_shape_att[0],
                                     link_shape_att[1],link_shape_att[2],
                                     link_shape_att[3],link_shape_att[4],
-                                    link_shape_att[5],link_shape_att[6], Unit_meters = True ) 
+                                    link_shape_att[5],link_shape_att[6], link_shape_att[7], Unit_meters = True ) 
 
 
 # =============================================================================
@@ -515,173 +545,8 @@ def read_emissions_factor_SK(input_dir, EmisFactor_list, sep = ';'):
 EF_All_fuel_function = read_emissions_factor_SK(input_dir, Emis_Factor_list, sep = ';')
 
 
-#pollutants = EF_All_fuel.Pollutant.unique() #['NOx', 'CO', 'VOC', 'PM10', 'PM2.5']
-
-#iyr  =2011
-
-act_data_by_region = AD_SK.data.drop(columns='manufacture_date')
-act_data_by_region = act_data_by_region.groupby(['region_cd']).sum()
-act_data_by_region.reset_index(inplace=True)
-act_data_by_link =  pd.concat([roads_RGS.roads_df, 
-                               pd.DataFrame(np.zeros((roads_RGS.roads_df.shape[0],
-                                                      AD_SK.fullname.shape[0])),columns=AD_SK.fullname.vhc_name.unique())], axis=1)
-
-
-for igeocd in AD_SK.data.region_cd.unique():
-    if igeocd in list(act_data_by_link.region_cd.unique()):
-        for ivhc in AD_SK.fullname.vhc_name:
-            if ivhc in list(act_data_by_link.columns):
-                aux = act_data_by_link.total_area.loc[act_data_by_link.region_cd   == igeocd] / \
-                     (act_data_by_link.total_area.loc[act_data_by_link.region_cd  == igeocd]).sum() * \
-                      np.asarray(act_data_by_region[ivhc].loc[act_data_by_region.region_cd == igeocd])
-                act_data_by_link.loc[act_data_by_link.region_cd == igeocd,[ivhc]] = aux
-            else:
-                print('*** WARNING ***:  There is no activity data for vehicle {0} for County {1}'.format(ivhc,igeocd))
-            
-    else:
-        print('*** WARNING *** Region code {0} is not is not in link shapefile.'.format(igeocd))
-        print('*** WARNING *** The activity data of region code {0} will be not count into emissions'.format(igeocd))
-        print('*** WARNING *** Please, correct your link shapefile to avoid wrong calculations!!')
-
-act_data_age_dist = pd.DataFrame(columns= AD_SK.data.columns)
-for ifips in AD_SK.data.region_cd.unique():
-    aux_year   = AD_SK.data.manufacture_date[(AD_SK.data.region_cd == ifips)]
-    aux_region = AD_SK.data.region_cd[(AD_SK.data.region_cd == ifips)]
-    aux_data   = (AD_SK.data[(AD_SK.data.region_cd == ifips)]) / AD_SK.data[(AD_SK.data.region_cd == ifips)].sum()
-    aux_data.manufacture_date = aux_year
-    aux_data.region_cd      = aux_region
-    aux_data = aux_data.fillna(0.0)
-    act_data_age_dist = act_data_age_dist.append(aux_data,ignore_index=True)
-
-
-def calculate_EmisFact_OLD(Input_dir, Emissions_Factor_Table):
-    EF_All_fuel = Emissions_Factor_Table
-    input_dir = Input_dir
-    start_time = time.time()
-    array_col =['year','pollutant','spd']+list(EF_All_fuel.EF_fullname.EF_fullname)
-    nspd = np.asarray([1, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60,
-                       65, 70, 80, 90, 100, 110, 120, 130, 140, 150])
-    yr_loop = np.asarray([iyr for iyr in range(EF_All_fuel.EF_years.EF_years.min(),EF_All_fuel.EF_years.EF_years.max()+1)])
-    pol_loop = np.asarray( EF_All_fuel.EF_polls.EF_poll)
-    yr_list = []
-    spd_list = []
-    pol_list = []
-    for z in pol_loop:
-        for i in yr_loop:
-            for j in nspd:
-                pol_list.append(z)
-                yr_list.append(i)
-                spd_list.append(j)
-    aux_array = np.zeros(((nspd.shape[0] * \
-                          EF_All_fuel.EF_polls.EF_poll.shape[0] * \
-                          EF_All_fuel.EF_years.EF_years.shape[0]), len(array_col)))
-    
-    EmisFact_yr_spd = pd.DataFrame(aux_array, columns = array_col )
-    EmisFact_yr_spd.year      = yr_list
-    EmisFact_yr_spd.spd       = spd_list
-    EmisFact_yr_spd.pollutant = pol_list
-    for ipoll in EF_All_fuel.EF_polls.EF_poll:
-        print('*** Processing emissions factor for {0}'.format(ipoll))
-        for ivhc in EF_All_fuel.EF_fullname.EF_fullname:
-            spd = {'spd' : nspd,
-                   ivhc  : (np.zeros(nspd.shape[0]))}
-            spd_EF = pd.DataFrame(spd)
-            yr_vhc_list = pd.DataFrame({'year' : EF_All_fuel.data.Years.loc[(EF_All_fuel.data.FullName == ivhc) &
-                                                                            (EF_All_fuel.data.Pollutant == ipoll)].unique()})
-            yr_vhc_min = yr_vhc_list.year.min()
-            yr_vhc_max = yr_vhc_list.year.max()
-    
-            for iyr in range(EF_All_fuel.EF_years.EF_years.min(),EF_All_fuel.EF_years.EF_years.max()+1):
-                EF_real_yr = []
-                if iyr in list(yr_vhc_list.year):
-                    iyr_EF = iyr
-                elif iyr >= yr_vhc_max:
-                    iyr_EF = yr_vhc_list.year[(yr_vhc_list.year-iyr).abs().argsort()[:2]].max()
-                else: 
-                    iyr_EF = yr_vhc_list.year[(yr_vhc_list.year-iyr).abs().argsort()[:2]].min()
-                dat_ef = EF_All_fuel.data[((EF_All_fuel.data.Vehicle  == ivhc.split('_')[0]) & 
-                                          (EF_All_fuel.data.Types     == ivhc.split('_')[1]) &
-                                          (EF_All_fuel.data.Fuel      == ivhc.split('_')[2]) &
-                                          (EF_All_fuel.data.Pollutant == ipoll)              &
-                                          (EF_All_fuel.data.Years     == iyr_EF))]
-                dat_ef = dat_ef.reset_index(drop=True)
-                ef_list = []
-                if dat_ef.V.shape[0] > 1 and (dat_ef.V[0] != 0):
-                    if   'L' in list(dat_ef.V[0].split('E')):
-                        spd_LEGT = float((dat_ef.V[0].split('E'))[1])
-                        aux_LE = dat_ef.V[0]
-                        aux_GT = dat_ef.V[1]
-                        idx0 = (dat_ef.V[dat_ef.V == aux_LE].index)[0]
-                        idx1 = (dat_ef.V[dat_ef.V == aux_GT].index)[0]
-                        
-                    elif 'G' in list(dat_ef.V[0].split('T')):
-                        spd_LEGT = float((dat_ef.V[0].split('T'))[1])
-                        aux_LE = dat_ef.V[1]
-                        aux_GT = dat_ef.V[0]
-                        idx0 = (dat_ef.V[dat_ef.V == aux_LE].index)[0]
-                        idx1 = (dat_ef.V[dat_ef.V == aux_GT].index)[0]
-                    
-                    for ispd, idx in zip(spd_EF.spd, spd_EF.index):
-                        if ispd <= spd_LEGT:
-                            ef = ((np.float(dat_ef.a[idx0]) * ispd**(np.float(dat_ef.b[idx0]))) + \
-                                  (np.float(dat_ef.c[idx0]) * ispd**(np.float(dat_ef.d[idx0]))) + \
-                                  (np.float(dat_ef.f[idx0]))) * \
-                                  (np.float(dat_ef.k[idx0]))
-                            ef_list.append(ef)
-                            EF_real_yr.append(iyr)
-    
-                        elif ispd > spd_LEGT:
-                            ef = ((np.float(dat_ef.a[idx1]) * ispd**(np.float(dat_ef.b[idx1]))) + \
-                                  (np.float(dat_ef.c[idx1]) * ispd**(np.float(dat_ef.d[idx1]))) + \
-                                  (np.float(dat_ef.f[idx1]))) * \
-                                  (np.float(dat_ef.k[idx1]))
-                            ef_list.append(ef)
-                            EF_real_yr.append(iyr)
-                elif dat_ef.V.shape[0] > 1 and (dat_ef.V[0] == 0):
-                    idx0 = dat_ef.index[0]
-                    for ispd, idx in zip(spd_EF.spd, spd_EF.index):
-                        ef = ((np.float(dat_ef.a[idx0]) * ispd**(np.float(dat_ef.b[idx0]))) + \
-                              (np.float(dat_ef.c[idx0]) * ispd**(np.float(dat_ef.d[idx0]))) + \
-                              (np.float(dat_ef.f[idx0]))) * \
-                              (np.float(dat_ef.k[idx0]))
-                        ef_list.append(ef)
-                        EF_real_yr.append(iyr)
-                elif dat_ef.shape[0] == 0 :
-                    print('*** WARNING *** The emission factor for vehicle {0} of year {1} is zero!'.format(ivhc,iyr))
-                    print('*** WARNING *** Check the emissions factor input table')
-                    for ispd, idx in zip(spd_EF.spd, spd_EF.index):
-                        ef = 0.0
-                        ef_list.append(ef)
-                        EF_real_yr.append(iyr)
-                else: 
-                    idx0 = dat_ef.index[0]
-                    for ispd, idx in zip(spd_EF.spd, spd_EF.index):
-                        ef = ((np.float(dat_ef.a[idx0]) * ispd**(np.float(dat_ef.b[idx0]))) + \
-                              (np.float(dat_ef.c[idx0]) * ispd**(np.float(dat_ef.d[idx0]))) + \
-                              (np.float(dat_ef.f[idx0]))) * \
-                              (np.float(dat_ef.k[idx0]))
-                        ef_list.append(ef)
-                        EF_real_yr.append(iyr)
-    
-                spd_EF[ivhc]      = np.asarray(ef_list)
-                spd_EF['year']    = EF_real_yr
-    
-                EmisFact_yr_spd[ivhc][((EmisFact_yr_spd.pollutant == ipoll) & 
-                                       (EmisFact_yr_spd.year      == iyr))] = spd_EF[ivhc].values
-    EmisFact_yr_spd.to_csv(input_dir+'/intermediate/EmisFactor_yr_spd.csv',sep=';', index=False)            
-    run_time = ((time.time() - start_time))
-    print("--- %f seconds ---" % (run_time))
-    print("--- %f minutes ---" % (run_time/60))
-    print("--- %f Hours   ---" % (run_time/3600))
-    
-    return EmisFact_yr_spd
-#EmisFactor_yr_spd = calculate_EmisFact_OLD(input_dir, EF_All_fuel_function)
-#EmisFactor_yr_spd = pd.read_csv(inter_dir+'/EmisFactor_yr_spd.csv', sep = ';')
-
-
-
                               
-def calculate_EmisFact(Input_dir, Emissions_Factor_Table, ):
+def calculate_EmisFact(Input_dir, Emissions_Factor_Table ):
     EF_All_fuel = Emissions_Factor_Table.data.copy()
     input_dir = Input_dir
     start_time = time.time()
@@ -781,308 +646,189 @@ EmisFactor_yr_spd = calculate_EmisFact(input_dir, EF_All_fuel_function)
 
 
 
-
-
-start_time = time.time()
-
-temp_EF_df = EmisFactor_yr_spd.data.copy()
-nspd = [4, 8, 16, 24, 32, 40, 48, 56, 64, 72, 80, 89, 97, 105, 113, 121]
-EFyears = list(np.sort(temp_EF_df.Years.unique()))
-ADyears = list(np.sort(AD_SK.data.manufacture_date.unique()))
-EF_yr_min = np.min(EFyears)
-AD_yr_max = np.max(ADyears)
-nyears = list(np.arange(EF_yr_min,AD_yr_max+1))
-final_EF_df = pd.DataFrame(columns=['Years','Pollutant','spd']+list(temp_EF_df.FullName.unique()))
-yrlist = []
-spdlist = []
-for jspd in nspd:
-    for jyr in nyears:
-        spdlist.append(jspd)
-        yrlist.append(jyr)
-for ipol in list(temp_EF_df.Pollutant.unique()):
-    inter_EF = pd.DataFrame({'Years' : yrlist,
-                          'spd'   : spdlist,
-                          'Pollutant' : [ipol for i in range(0,len(yrlist))]})
-    for ivhc in list(temp_EF_df.FullName.unique()):
-        aux_df = temp_EF_df.loc[(temp_EF_df.FullName == ivhc)  & 
-                                (temp_EF_df.Pollutant == ipol), ['Years','emis_fact','spd']].reset_index(drop=True)
-        aux_df = aux_df.rename(columns={'emis_fact':ivhc})
-        aux_df.Years = aux_df.Years.astype(int)
-        aux_df.spd = aux_df.spd.astype(int)
-        inter_EF = pd.merge(inter_EF,aux_df, left_on = ['Years','spd'], right_on = ['Years','spd'], how='left') #.fillna(method='bfill')
-        #inter_EF = inter_EF.fillna(method='ffill')
-    final_EF_df = final_EF_df.append(inter_EF,ignore_index=True, sort=False)
-    for ispd in nspd:
-        final_EF_df.loc[(final_EF_df.Pollutant == ipol) & (final_EF_df.spd == ispd)] = \
-        final_EF_df.loc[(final_EF_df.Pollutant == ipol) & (final_EF_df.spd == ispd)].fillna(method='bfill').fillna(method='ffill')
-
-final_EF_df = final_EF_df.fillna(0)
-
-
-aux_emis_AD = AD_SK.data.copy()
-EF_yr_min = np.min(nyears)
-AD_years = list(np.sort(AD_SK.data.manufacture_date.unique()))
-AD_yrlist = []
-region_list = []
-for iregion in list(np.sort(AD_SK.data.region_cd.unique())):
-    for zyr in AD_years:
-        AD_yrlist.append(zyr)
-        region_list.append(iregion)
-
-final_AD_df = pd.DataFrame({'manufacture_date' : AD_yrlist,
-                            'region_cd'        : region_list})
-aux_emis_AD.loc[:,['manufacture_date','region_cd']] = aux_emis_AD.loc[:,['manufacture_date','region_cd']].astype(int)
-final_AD_df = pd.merge(final_AD_df,aux_emis_AD, left_on = ['manufacture_date','region_cd'], 
-                    right_on = ['manufacture_date','region_cd'], how='left').fillna(0.0)
-
-
-inter_AD = final_AD_df.loc[final_AD_df.manufacture_date <= EF_yr_min]
-drop_list_AD = list(inter_AD.index)
-inter_AD = inter_AD.groupby(['region_cd']).sum()
-inter_AD = inter_AD.reset_index(drop=False)
-inter_AD.loc[:,'manufacture_date'] = EF_yr_min
-
-final_AD_df = final_AD_df.drop(index=drop_list_AD).reset_index(drop=True)
-final_AD_df = final_AD_df.append(inter_AD,ignore_index=True, sort=False)
-final_AD_df = final_AD_df.sort_values(by=['region_cd','manufacture_date']).reset_index(drop=True)
-
-
-
-
-
-Emissions_by_link = pd.concat([roads_RGS.roads_df, 
-                               pd.DataFrame(np.zeros((roads_RGS.roads_df.shape[0],
-                                                      AD_SK.fullname.shape[0])),columns=AD_SK.fullname.vhc_name.unique())], axis=1)
-
-#
-#geocd = [11260105]
-#igeocd = 11260105
-#ispd = 4.0
-#iroad = 101
-#ivhc = 'sedan_compact_gasoline' #'sedan_compact_gasoline'
-#ipol = 'CO'  #'CO'
-
-#speeds = np.sort(Emissions_by_link.max_speed.unique())
-
-
-Emissions_by_yr_county = pd.DataFrame(columns=list(final_AD_df.columns) + ['pollutant'])
-#jpol = 'CO'
-for jpol in list(EmisFactor_yr_spd.data.Pollutant.unique()):
+def calc_County_Emissions(Input_dir, Emissions_Factor_DataFrame, 
+                          Activity_Data_DataFrame, Roads_DataFrame, County_DataFrame ):
+    print('*****************************************')
+    print('*** Starting calculation of emissions ***')
+    print('***          Please wait ...          ***')
+    print('*****************************************')
+    start_time = time.time()
+    input_dir = Input_dir          #Input_dir
+    EF_yr_spd  = EmisFactor_yr_spd #Emissions_Factor_DataFrame
+    AD_yr_vhc  = AD_SK             #Activity_Data_DataFrame
+    roads_DF   = roads_RGS         #Roads_DataFrame
+#    county_df  = county_df         #County_DataFrame
+    
+  
+    temp_EF_df = EF_yr_spd.data.copy()
+    nspd = [4, 8, 16, 24, 32, 40, 48, 56, 64, 72, 80, 89, 97, 105, 113, 121]
+    EFyears = list(np.sort(temp_EF_df.Years.unique()))
+    ADyears = list(np.sort(AD_yr_vhc.data.manufacture_date.unique()))
+    EF_yr_min = np.min(EFyears)
+    AD_yr_max = np.max(ADyears)
+    nyears = list(np.arange(EF_yr_min,AD_yr_max+1))
+    final_EF_df = pd.DataFrame(columns=['Years','Pollutant','spd']+list(temp_EF_df.FullName.unique()))
+    yrlist = []
+    spdlist = []
+    for jspd in nspd:
+        for jyr in nyears:
+            spdlist.append(jspd)
+            yrlist.append(jyr)
+    for ipol in list(temp_EF_df.Pollutant.unique()):
+        inter_EF = pd.DataFrame({'Years' : yrlist,
+                              'spd'   : spdlist,
+                              'Pollutant' : [ipol for i in range(0,len(yrlist))]})
+        for ivhc in list(temp_EF_df.FullName.unique()):
+            aux_df = temp_EF_df.loc[(temp_EF_df.FullName == ivhc)  & 
+                                    (temp_EF_df.Pollutant == ipol), ['Years','emis_fact','spd']].reset_index(drop=True)
+            aux_df = aux_df.rename(columns={'emis_fact':ivhc})
+            aux_df.Years = aux_df.Years.astype(int)
+            aux_df.spd = aux_df.spd.astype(int)
+            inter_EF = pd.merge(inter_EF,aux_df, left_on = ['Years','spd'], right_on = ['Years','spd'], how='left') #.fillna(method='bfill')
+            #inter_EF = inter_EF.fillna(method='ffill')
+        final_EF_df = final_EF_df.append(inter_EF,ignore_index=True, sort=False)
+        for ispd in nspd:
+            final_EF_df.loc[(final_EF_df.Pollutant == ipol) & (final_EF_df.spd == ispd)] = \
+            final_EF_df.loc[(final_EF_df.Pollutant == ipol) & (final_EF_df.spd == ispd)].fillna(method='bfill').fillna(method='ffill')
+    
+    final_EF_df = final_EF_df.fillna(0)
+    
+    
+    aux_emis_AD = AD_yr_vhc.data.copy()
+    EF_yr_min = np.min(nyears)
+    AD_years = list(np.sort(AD_yr_vhc.data.manufacture_date.unique()))
+    AD_yrlist = []
+    region_list = []
+    for iregion in list(np.sort(AD_yr_vhc.data.region_cd.unique())):
+        for zyr in AD_years:
+            AD_yrlist.append(zyr)
+            region_list.append(iregion)
+    
+    final_AD_df = pd.DataFrame({'manufacture_date' : AD_yrlist,
+                                'region_cd'        : region_list})
+    aux_emis_AD.loc[:,['manufacture_date','region_cd']] = aux_emis_AD.loc[:,['manufacture_date','region_cd']].astype(int)
+    final_AD_df = pd.merge(final_AD_df,aux_emis_AD, left_on = ['manufacture_date','region_cd'], 
+                        right_on = ['manufacture_date','region_cd'], how='left').fillna(0.0)
+    
+    
+    inter_AD = final_AD_df.loc[final_AD_df.manufacture_date <= EF_yr_min]
+    drop_list_AD = list(inter_AD.index)
+    inter_AD = inter_AD.groupby(['region_cd']).sum()
+    inter_AD = inter_AD.reset_index(drop=False)
+    inter_AD.loc[:,'manufacture_date'] = EF_yr_min
+    
+    final_AD_df = final_AD_df.drop(index=drop_list_AD).reset_index(drop=True)
+    final_AD_df = final_AD_df.append(inter_AD,ignore_index=True, sort=False)
+    final_AD_df = final_AD_df.sort_values(by=['region_cd','manufacture_date']).reset_index(drop=True)
+    
+    Emissions_by_yr_county = pd.DataFrame(columns=['pollutant'] + list(final_AD_df.columns))
+    #jpol = 'CO'
+    for jpol in list(EF_yr_spd.data.Pollutant.unique()):
+        aux_emis_AD = final_AD_df.copy()
+        aux_emis_AD['pollutant'] = [jpol for i in aux_emis_AD.index]
+        Emissions_by_yr_county = Emissions_by_yr_county.append(aux_emis_AD,ignore_index=True, sort=False)
+    Emissions_by_yr_county = Emissions_by_yr_county.sort_values(by=['region_cd','pollutant','manufacture_date']).reset_index(drop=True)
+    Emissions_by_yr_county.loc[:,list(AD_yr_vhc.fullname.vhc_name)] = 0
+    
     aux_emis_AD = final_AD_df.copy()
-    aux_emis_AD['pollutant'] = [jpol for i in aux_emis_AD.index]
-    Emissions_by_yr_county = Emissions_by_yr_county.append(aux_emis_AD,ignore_index=True, sort=False)
-Emissions_by_yr_county = Emissions_by_yr_county.sort_values(by=['region_cd','pollutant','manufacture_date']).reset_index(drop=True)
-Emissions_by_yr_county.loc[:,list(AD_SK.fullname.vhc_name)] = 0
-
-aux_emis_AD = final_AD_df.copy()
-
-for iroad in np.sort(Emissions_by_link.road_type.unique()): #[101,103,104,107]: #  
-    start_time_loop = time.time()
-    aux_emis_EF = final_EF_df.copy()
-    aux_RD = Emissions_by_link.loc[(Emissions_by_link.road_type == iroad),:].reset_index(drop=True)
-    road_weight = aux_RD.groupby(['region_cd']).sum().reset_index(drop=False)
-    aux_avgSpd = avgSpeedDist.data.loc[:,['Speed',str(iroad)]]
-    for ispd in avgSpeedDist.data.Speed:
-        aux_emis_EF.loc[(aux_emis_EF.spd.isin([ispd])),list(temp_EF_df.FullName.unique())] = \
-        aux_emis_EF.loc[(aux_emis_EF.spd.isin([ispd])),list(temp_EF_df.FullName.unique())] * \
-        np.float(aux_avgSpd.loc[(aux_avgSpd.Speed.isin([ispd])),str(iroad)])
     
-    weight_EF = pd.DataFrame(columns=aux_emis_EF.columns)
-    for iyr in aux_emis_EF.Years.unique():
-        aux_EF = aux_emis_EF.loc[aux_emis_EF.Years ==  iyr]
-        aux_EF = aux_EF.groupby(['Pollutant','Years']).sum()
-        aux_EF = aux_EF.reset_index(drop=False)
-        weight_EF = weight_EF.append(aux_EF,ignore_index=True, sort=False)
-    weight_EF = weight_EF.sort_values(by=['Pollutant','Years']).reset_index(drop=True)
-    weight_EF = weight_EF.drop(columns=['spd'])
-    weight_EF.loc[:,'Years'] = weight_EF.loc[:,'Years'].astype(int)
+    for iroad in np.sort(roads_DF.roads_df.road_type.unique()): #[101,103,104,107]: #  
+        aux_emis_EF = final_EF_df.copy()
+        aux_RD = roads_DF.roads_df.loc[(roads_DF.roads_df.road_type == iroad),:].reset_index(drop=True)
+        road_weight = aux_RD.groupby(['region_cd']).sum().reset_index(drop=False)
+        road_weight = road_weight.loc[:,['region_cd','link_split_county']]
+        aux_avgSpd = avgSpeedDist.data.loc[:,['Speed',str(iroad)]]
+        for ispd in avgSpeedDist.data.Speed:
+            aux_emis_EF.loc[(aux_emis_EF.spd.isin([ispd])),list(temp_EF_df.FullName.unique())] = \
+            aux_emis_EF.loc[(aux_emis_EF.spd.isin([ispd])),list(temp_EF_df.FullName.unique())] * \
+            np.float(aux_avgSpd.loc[(aux_avgSpd.Speed.isin([ispd])),str(iroad)])
+        
+        weight_EF = pd.DataFrame(columns=aux_emis_EF.columns)
+        for iyr in aux_emis_EF.Years.unique():
+            aux_EF = aux_emis_EF.loc[aux_emis_EF.Years ==  iyr]
+            aux_EF = aux_EF.groupby(['Pollutant','Years']).sum()
+            aux_EF = aux_EF.reset_index(drop=False)
+            weight_EF = weight_EF.append(aux_EF,ignore_index=True, sort=False)
+        weight_EF = weight_EF.sort_values(by=['Pollutant','Years']).reset_index(drop=True)
+        weight_EF = weight_EF.drop(columns=['spd'])
+        weight_EF.loc[:,'Years'] = weight_EF.loc[:,'Years'].astype(int)
+        
+        for ipol in list(EF_yr_spd.data.Pollutant.unique()):
+            nregion = list(road_weight.region_cd.unique())
+            aux_AD_county = aux_emis_AD.loc[(aux_emis_AD.region_cd.isin(nregion))].reset_index(drop=True)
+            aux_AD_county.loc[:,'manufacture_date'] = aux_AD_county.loc[:,'manufacture_date'].astype(int)
+            apply_RD_weight = pd.DataFrame({'region_cd' : aux_AD_county.region_cd})
+            apply_RD_weight = pd.merge(apply_RD_weight,road_weight, left_on = 'region_cd', 
+                              right_on = ['region_cd'], how='left')
+            apply_EF = pd.DataFrame({'Years'     : list(aux_AD_county.manufacture_date),
+                                     'Pollutant' : [ipol for i in aux_AD_county.index]})
+            apply_EF = pd.merge(apply_EF,weight_EF, left_on = ['Years','Pollutant'], 
+                        right_on = ['Years','Pollutant'], how='left')
+            nvhc = list(np.sort(AD_yr_vhc.fullname.vhc_name))
+            year_list_EF = list(aux_AD_county.manufacture_date.unique())
+            aux_AD_county.loc[:,nvhc] = aux_AD_county.loc[:,nvhc].apply(lambda x: np.asarray(x) * apply_RD_weight.link_split_county.values)
+            aux_AD_county.loc[:,nvhc] = aux_AD_county.loc[:,nvhc] * apply_EF.loc[:,nvhc]
     
-    for ipol in list(EmisFactor_yr_spd.data.Pollutant.unique()):
-        nregion = list(road_weight.region_cd.unique())
-        aux_AD_county = aux_emis_AD.loc[(aux_emis_AD.region_cd.isin(nregion))].reset_index(drop=True)
-        aux_AD_county.loc[:,'manufacture_date'] = aux_AD_county.loc[:,'manufacture_date'].astype(int)
-        apply_EF = pd.DataFrame({'Years'     : list(aux_AD_county.manufacture_date),
-                                 'Pollutant' : [ipol for i in aux_AD_county.index]})
-        apply_EF = pd.merge(apply_EF,weight_EF, left_on = ['Years','Pollutant'], 
-                    right_on = ['Years','Pollutant'], how='left')
-        nvhc = list(np.sort(AD_SK.fullname.vhc_name))
-        year_list_EF = list(aux_AD_county.manufacture_date.unique())
-        aux_AD_county.loc[:,nvhc] = aux_AD_county.loc[:,nvhc] * apply_EF.loc[:,nvhc]
-
-        Emissions_by_yr_county.loc[(Emissions_by_yr_county.region_cd.isin(nregion)) &
-            (Emissions_by_yr_county.manufacture_date.isin(year_list_EF)) &
-            (Emissions_by_yr_county.pollutant.isin([ipol])), nvhc] = \
-        (Emissions_by_yr_county.loc[(Emissions_by_yr_county.region_cd.isin(nregion)) &
-            (Emissions_by_yr_county.manufacture_date.isin(year_list_EF)) &
-            (Emissions_by_yr_county.pollutant.isin([ipol])), nvhc].reset_index(drop=True) + \
-            aux_AD_county.loc[:,nvhc].reset_index(drop=True)).values
-
-
-           
-    run_time_loop = ((time.time() - start_time_loop))
-    print("--- %f seconds LOOP roads ---" % (run_time_loop))
-
-run_time = ((time.time() - start_time))
-print("--- %f seconds ---" % (run_time))
-print("--- %f minutes ---" % (run_time/60))
-print("--- %f Hours   ---" % (run_time/3600))
+            Emissions_by_yr_county.loc[(Emissions_by_yr_county.region_cd.isin(nregion)) &
+                (Emissions_by_yr_county.manufacture_date.isin(year_list_EF)) &
+                (Emissions_by_yr_county.pollutant.isin([ipol])), nvhc] = \
+            (Emissions_by_yr_county.loc[(Emissions_by_yr_county.region_cd.isin(nregion)) &
+                (Emissions_by_yr_county.manufacture_date.isin(year_list_EF)) &
+                (Emissions_by_yr_county.pollutant.isin([ipol])), nvhc].reset_index(drop=True) + \
+                aux_AD_county.loc[:,nvhc].reset_index(drop=True)).values
     
-
-
-
-
-
-
-
-
-
+    nvhc = list(np.sort(AD_yr_vhc.fullname.vhc_name))
+    total_county = Emissions_by_yr_county.groupby(['region_cd','pollutant']).sum()
+    total_county = total_county.reset_index(drop=False)
+    Emissions_by_link = pd.merge(roads_DF.roads_df,total_county, left_on = ['region_cd'], 
+                        right_on = ['region_cd'], how='left')
     
-#start_time = time.time()
-#
-#Emissions_by_link = pd.concat([roads_RGS.roads_df, 
-#                               pd.DataFrame(np.zeros((roads_RGS.roads_df.shape[0],
-#                                                      AD_SK.fullname.shape[0])),columns=AD_SK.fullname.vhc_name.unique())], axis=1)
-#
-#EF_by_link = pd.DataFrame(columns=list(Emissions_by_link.columns))
-#
-#geocd = [11260105]
-##igeocd = 11260105
-##ispd = 4.0
-#iroad = 101
-#ivhc = 'sedan_compact_gasoline' #'sedan_compact_gasoline'
-#ipol = 'CO'  #'CO'
-#
-#speeds = np.sort(Emissions_by_link.max_speed.unique())
-#aux_emis_AD = AD_SK.data.copy()
-##aux_emis_AD = aux_emis_AD.sort_values(by=['region_cd','manufacture_date']).reset_index(drop=True)
-#
-#Emissions_by_yr_county = pd.DataFrame(columns=list(aux_emis_AD.columns) + ['pollutant'])
-#jpol = 'CO'
-#for jpol in list(EmisFactor_yr_spd.data.Pollutant.unique()):
-#    aux_emis_AD = AD_SK.data.copy()
-#    aux_emis_AD['pollutant'] = [jpol for i in aux_emis_AD.index]
-#    Emissions_by_yr_county = Emissions_by_yr_county.append(aux_emis_AD,ignore_index=True, sort=False)
-#Emissions_by_yr_county = Emissions_by_yr_county.sort_values(by=['region_cd','pollutant','manufacture_date']).reset_index(drop=True)
-#Emissions_by_yr_county.loc[:,list(AD_SK.fullname.vhc_name)] = 0
-#
-#aux_emis_AD = AD_SK.data.copy()
-#
-#for iroad in [101,103,104,107]: #  np.sort(Emissions_by_link.road_type.unique()): #
-#    start_time_loop = time.time()
-#    aux_emis_EF = EmisFactor_yr_spd.data.copy()
-#    aux_RD = Emissions_by_link.loc[(Emissions_by_link.road_type == iroad),:].reset_index(drop=True)
-#    road_weight = aux_RD.groupby(['region_cd']).sum().reset_index(drop=False)
-#    aux_avgSpd = avgSpeedDist.data.loc[:,['Speed',str(iroad)]]
-#    for ispd in avgSpeedDist.data.Speed:
-#        aux_emis_EF.loc[(aux_emis_EF.spd.isin([ispd])),'emis_fact'] = \
-#        aux_emis_EF.loc[(aux_emis_EF.spd.isin([ispd])),'emis_fact'].values * \
-#        aux_avgSpd.loc[(aux_avgSpd.Speed.isin([ispd])),str(iroad)].values
-#    
-#    aux_emis_EF = aux_emis_EF.drop(columns=['Temperatures','V','ambient_temp','spd'])
-#    aux_emis_EF = aux_emis_EF.groupby(['FullName', 'Pollutant','Years']).sum()
-#    aux_emis_EF = aux_emis_EF.reset_index(drop=False)
-#
-#    for ipol in list(EmisFactor_yr_spd.data.Pollutant.unique()):
-#        aux_AD_county = aux_emis_AD.loc[(aux_emis_AD.region_cd.isin(list(road_weight.region_cd.unique())))].reset_index(drop=True)
-#
-##        icnty = 11260105
-#        for icnty in geocd: # list(road_weight.region_cd.unique()): #
-#            aux_df = aux_AD_county.loc[(aux_AD_county.region_cd.isin([icnty])),:].reset_index(drop=True)
-#            
-#            aux_df.loc[(aux_df.region_cd.isin([icnty])),list(AD_SK.fullname.vhc_name)] = \
-#            aux_AD_county.loc[(aux_AD_county.region_cd.isin([icnty])),list(AD_SK.fullname.vhc_name)].values * \
-#            road_weight.loc[(road_weight.region_cd.isin([icnty])),'link_split_county'].values
-#            
-#            for ivhc in list(AD_SK.fullname.vhc_name):
-#                aux_df_yr_EF = aux_emis_EF.loc[(aux_emis_EF.FullName.isin([ivhc])) &
-#                                               (aux_emis_EF.Pollutant.isin([ipol])), ['Years','emis_fact']].reset_index(drop=True)
-#                aux_df_yr_EF = aux_df_yr_EF.rename(columns={'emis_fact':ivhc})
-#                aux_emisfact = pd.DataFrame({'manufacture_date' : aux_df.manufacture_date})
-#                aux_emisfact = pd.merge(aux_emisfact,aux_df_yr_EF, left_on = 'manufacture_date', right_on = 'Years', how='left').fillna(method='bfill')
-#                aux_emisfact = aux_emisfact.fillna(method='ffill')
-#                aux_df.loc[:,[ivhc]] = aux_df.loc[:,ivhc].values * aux_emisfact[ivhc].values
-#            
-#            
-#            year_list_EF = list(aux_df.manufacture_date)
-#            Emissions_by_yr_county.loc[(Emissions_by_yr_county.region_cd.isin([icnty])) &
-#            (Emissions_by_yr_county.manufacture_date.isin(year_list_EF)) &
-#            (Emissions_by_yr_county.pollutant.isin([ipol])), list(AD_SK.fullname.vhc_name)] += \
-#                                     aux_df.loc[:,list(AD_SK.fullname.vhc_name)].values
-#        
-#    run_time_loop = ((time.time() - start_time_loop))
-#    print("--- %f seconds LOOP roads ---" % (run_time_loop))
-#
-#run_time = ((time.time() - start_time))
-#print("--- %f seconds ---" % (run_time))
-#print("--- %f minutes ---" % (run_time/60))
-#print("--- %f Hours   ---" % (run_time/3600))
-#        
+    Emissions_by_link.loc[:,nvhc] = Emissions_by_link.loc[:,nvhc].apply(lambda x: np.asarray(x) * \
+                         Emissions_by_link.vkt_split_county.values)    
+
+    #Calculation the total emissions for county and link level
+    Emissions_by_yr_county['total_emis'] = Emissions_by_yr_county.loc[:,nvhc].sum(axis=1)
+    Emissions_by_link['total_emis']      = Emissions_by_link.loc[:,nvhc].sum(axis=1)
+    total_county['total_emis']           = total_county.loc[:,nvhc].sum(axis=1)
+    county_table = pd.DataFrame({'region_cd' : Emissions_by_yr_county.region_cd.unique()})
+    years_table  = pd.DataFrame({'years' : Emissions_by_yr_county.manufacture_date.unique()})
+
+#    cnt_info = county_df.loc[:,['geometry','region_cd']]
+    total_county = pd.merge(total_county,county_df, left_on = ['region_cd'], 
+                        right_on = ['region_cd'], how='left')
+    total_county = gpd.GeoDataFrame(total_county, crs=county_df.crs, geometry='geometry')
+
+    print('*****************************************')
+    print('*** Emissions calculation is done     ***')
+    print('*****************************************')        
+    run_time = ((time.time() - start_time))
+    print("--- %f seconds ---" % (run_time))
+    print("--- %f minutes ---" % (run_time/60))
+    print("--- %f Hours   ---" % (run_time/3600))
+        
+    return Emissions_table(Emissions_by_yr_county, Emissions_by_link, 
+                           total_county, county_table, years_table)
+
+County_Emissions = calc_County_Emissions(input_dir, EmisFactor_yr_spd,
+                                       AD_SK, roads_RGS, county_df)
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-#ivhc = 'sedan_midsize_lpg' #'sedan_compact_diesel'
-#ipol = 'CO'
-#iyr = 2010
-#dat_EF = EmisFactor_yr_spd.data
-#aaa = dat_EF[(dat_EF.Pollutant == ipol) &
-#                             (dat_EF.FullName == ivhc)] &
-#                             (dat_EF.Years == iyr)]
-#bbb = EmisFactor_yr_spd.loc[(EmisFactor_yr_spd.pollutant == ipol) &
-#                        (EmisFactor_yr_spd.year == iyr), ['spd',ivhc]]
-#ccc = Temp_EF_Diesel[(Temp_EF_Diesel.Pollutant == ipol) &
-#                             (Temp_EF_Diesel.FullName == ivhc)]
+#cnt_info = county_df.loc[:,['geometry','region_cd']]
+#total_county = pd.merge(total_county,cnt_info, left_on = ['region_cd'], 
+#                    right_on = ['region_cd'], how='left')
 #
 #
-#plt.plot(aaa.spd, aaa.emis_fact)
-#plt.plot(bbb.spd,bbb[ivhc])
-#
-#vhc_list = ['sedan_supercompact_diesel',
-#             'sedan_compact_diesel',
-#             'sedan_midsize_diesel',
-#             'sedan_fullsize_diesel']
-##             'van_compact_diesel',
-##             'van_midsize_diesel',
-##             'van_fullsize_diesel',
-##             'truck_compact_diesel',
-##             'truck_midsize_diesel',
-##             'truck_fullsize_diesel',
-##             'suv_compact_diesel',
-##             'suv_midsize_diesel']
 #
 #
-#for ipol in ['NOx']:
-#    for ivhc in vhc_list:
-#        print(ivhc)
-#        for iyr in dat_EF.Years.unique():
-#            aaa = dat_EF[(dat_EF.Pollutant == ipol) &
-#                         (dat_EF.FullName == ivhc) &
-#                         (dat_EF.Years == iyr)]
-#            bbb = EmisFactor_yr_spd.loc[(EmisFactor_yr_spd.pollutant == ipol) &
-#                                    (EmisFactor_yr_spd.year == iyr), ['spd',ivhc]]
-#            
-#            if aaa.shape[0] != 0:
-#                fig, ax = plt.subplots(1, figsize = (13,8))
-#                plt.plot(aaa.spd, aaa.emis_fact)
-#                plt.plot(bbb.spd,bbb[ivhc])
-#                ax.set_title('{0}_{1}_{2}'.format(ivhc, ipol, iyr), fontsize = 16)
-#        
-#                name = '{0}_{1}_{2}.png'.format(ivhc, ipol, iyr)
-#                fig.savefig(output_dir+'/'+name, bbox_inches = 'tight',dpi=150)
-#                plt.close()
-#    
+#aaa = County_Emissions.road_emis.groupby(['region_cd','pollutant']).sum()
+#aaa = aaa.reset_index(drop=False)
+#bbb = aaa.loc[(aaa.region_cd == 11260105) & (aaa.pollutant == 'CO')]
+#
+#
+#
+ccc = County_Emissions.road_emis.loc[(County_Emissions.road_emis.pollutant == 'CO')]
+ccc.plot(column='total_emis', cmap='jet', linewidth=0.8)
+
+ddd = County_Emissions.county_geo.loc[(County_Emissions.county_geo.pollutant == 'CO')]
+ddd.plot(column='total_emis', cmap='jet')
+
