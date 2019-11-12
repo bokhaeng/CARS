@@ -97,12 +97,19 @@ future_case      = 'no' #'yes' or 'no'
 
 '''
 ***** PLOTTING *****
-Do you want to create the plots?
-*** WARNING ***: The plotting takes a bit longer to finish
+Do you want to generate the figures?
+One option is the Adjustment of the plot scale. This was added to allow the user
+change the scale of all plots, because sometimes, there are one point with high emissions
+than the rest of the domain, so there is the need to renormalize the scale.
+The  adj_scale will multiply the maximum value of the plot area, so it will reduce
+or increase the maximum value of the scale.
+To use it, set the adj_scale to the value you want (e.g. 0.5) The default value is 0.4
+
+*** WARNING ***: The plotting takes a bit longer to finish especially the 24 hours plot
 '''
 plot_figures = 'yes'   #'yes' or 'no'
-plot_24 = 'no'        #'yes' or 'no' #24 hours animated plot
-
+plot_24      = 'no'        #'yes' or 'no' #24 hours animated plot
+adj_scale    = 0.4 
 
 '''
 '**********      Gridding options      **********'
@@ -129,7 +136,7 @@ If yes, set the outGridShape = 'yes'
 This option was added because sometimes generate the shapefile
 can take couple minutes.
 '''
-outGridShape = 'yes'
+outGridShape = 'no'
 
 
 '''
@@ -610,12 +617,7 @@ def read_activity_data_csv_SK(input_dir, ad_file, End_date, future_case = 'NO'):
                 print('*** Deleting these data ... ***')
                 idxneg_drop = list(activity_data.loc[activity_data['daily_vkt'] < 0].index)
                 activity_data = activity_data.drop(index=idxneg_drop).reset_index(drop=True)
-            
-            sedan_correction = (activity_data.loc[(activity_data.vehicle == 'sedan'),'daily_vkt']) * 3
-            activity_data.loc[(activity_data.vehicle == 'sedan'),'daily_vkt'] = sedan_correction
-            suv_correction = (activity_data.loc[(activity_data.vehicle == 'suv'), 'daily_vkt']) * 3
-            activity_data.loc[(activity_data.vehicle == 'suv'), 'daily_vkt'] = suv_correction
-            
+
             count_vhc = activity_data.groupby(['region_cd','fullname','manufacture_date']).sum().reset_index(drop=False)
             count_vhc = count_vhc.drop(columns=['daily_vkt'])
             count_vhc = count_vhc.sort_values(by=['region_cd','fullname','manufacture_date'])
@@ -1212,8 +1214,6 @@ def calculate_EmisFact(Input_dir, Emissions_Factor_Table, Out_dir ):
                                                (EF_All_fuel.f))
 
         aux_EF['spd']       = ispd
-
-        
         dat_EF = dat_EF.append(aux_EF, ignore_index=True, sort=False)
     
     dat_EF['ambient_temp'] = ((dat_EF.spd * 0 ) + temp_mean).astype(int)
@@ -1618,7 +1618,7 @@ def calc_County_Emissions(Input_dir, Emissions_Factor_DataFrame,
     
     Emissions_by_yr_county2csv = Emissions_by_yr_county.groupby(['region_cd','pollutant']).sum().reset_index(drop=False)
     Emissions_by_yr_county2csv.loc[:,ADvhc] = Emissions_by_yr_county2csv.loc[:,ADvhc] * (ndaysYEAR/1000000)
-    Emissions_by_yr_county2csv = Emissions_by_yr_county2csv.drop(columns=['manufacture_date','region_cd','road_type'])
+    Emissions_by_yr_county2csv = Emissions_by_yr_county2csv.drop(columns=['manufacture_date','road_type'])
     Emissions_by_yr_county2csv.to_csv(output_dir+'/hot_exhaust_emissions_Tons_per_Year.csv', sep=',', index=False)
     Emissions_by_yr_county2csv = []
     '''
@@ -1802,17 +1802,17 @@ def calc_County_Emissions(Input_dir, Emissions_Factor_DataFrame,
     R.set_index(['manufacture_date','region_cd','road_type'], inplace=True)
     R = R.sort_index()
     R = R.reset_index(drop=False)
-   
-    #Calculating Sfi based on South Korea equation 
+
+    #Calculating Sfi based on South Korea equation
     Sfi = aux_EE_AD.copy()
     Sfi.loc[:,ADvhc] = Sfi.loc[:,ADvhc].mul(0.7 / 12.35)
     Sfi.set_index(['manufacture_date','region_cd','road_type'], inplace=True)
     Sfi = Sfi.sort_index()
     Sfi = Sfi.reset_index(drop=False)
 
-    Ed  = Ed.sort_values(by=['region_cd','manufacture_date']).reset_index(drop=True) 
-    R   = R.sort_values(by=['region_cd','manufacture_date']).reset_index(drop=True) 
-    Sfi = Sfi.sort_values(by=['region_cd','manufacture_date']).reset_index(drop=True) 
+    Ed  = Ed.sort_values(by=['region_cd','manufacture_date']).reset_index(drop=True)
+    R   = R.sort_values(by=['region_cd','manufacture_date']).reset_index(drop=True)
+    Sfi = Sfi.sort_values(by=['region_cd','manufacture_date']).reset_index(drop=True)
     
 
     #Copying Ed emissions to the final dataframe
@@ -2132,7 +2132,7 @@ def aplly_control(Control_list_file, County_Emissions_df, County_SHP_df):
     cnt_df.county_by_yr = cnt_df.county_by_yr.sort_values(by=['region_cd','pollutant'])
     
     cnt_df.county_total = cnt_df.county_by_yr.groupby(['region_cd','pollutant']).sum().reset_index(drop=False)
-    cnt_df.county_total = cnt_df.county_total.drop(columns=['manufacture_date','road_type'])
+    cnt_df.county_total = cnt_df.county_total.drop(columns=['manufacture_date'])
     cnt_df.county_total = cnt_df.county_total.sort_values(by=['pollutant','region_cd']).reset_index(drop=True)
     
     aux_pol = cnt_df.county_total.pollutant.unique()[0]
@@ -2154,16 +2154,18 @@ def aplly_control(Control_list_file, County_Emissions_df, County_SHP_df):
     cnt_df.county_total_WGT = gpd.GeoDataFrame(cnt_df.county_total_WGT, crs=county_df.crs, geometry='geometry')
 
     total_county_YR_2CVS = cnt_df.county_by_yr.groupby(['region_cd', 'pollutant', 'manufacture_date']).sum().reset_index(drop=False)
-    total_county_YR_2CVS = total_county_YR_2CVS.drop(columns = ['road_type'])
     total_county_YR_2CVS.to_csv(output_dir+'/'+'County_Total_by_Year_Controled_Emissions_Tons_per_Year.csv', sep=',', index=False)
-
+    total_county_YR_2CVS = []
+    
     total_county_2CVS = cnt_df.county_by_yr.groupby(['region_cd', 'pollutant']).sum().reset_index(drop=False)
-    total_county_2CVS = total_county_2CVS.drop(columns = ['region_state','manufacture_date','road_type'])
+    total_county_2CVS = total_county_2CVS.drop(columns = ['region_state','manufacture_date'])
     total_county_2CVS.to_csv(output_dir+'/'+'County_Total_Controled_Emissions_Tons_per_Year.csv', sep=',', index=False)
+    total_county_2CVS = []
     
     total_county_WGT_2CSV = cnt_df.county_total_WGT.drop(columns = ['geometry','region_state','vkt_weight'])
     total_county_WGT_2CSV.to_csv(output_dir+'/'+'County_Total_Controled_Normalized_Emissions_Tons_per_Year.csv', sep=',', index=False)
-
+    total_county_WGT_2CSV = []
+    
     run_time = ((time.time() - start_time))
     print('---     Elapsed time in seconds = {0}     ---'.format(run_time))
     print('---     Elapsed time in minutes = {0}     ---'.format(run_time/60))
@@ -2498,7 +2500,7 @@ print('')
 
 
 def plot_figures_chart(County_Emissions, AD_SK, gridded_emissions, roads_RGS, 
-                       plot_figures = 'no', plot_24 = 'no', pol_list = [], ):
+                       plot_figures = 'no', plot_24 = 'no', pol_list = [], adj_scale = 0.4):
     print('')
     print('******************************************************************')
     print('*****              The Plot option is YES.                   *****')
@@ -2535,12 +2537,12 @@ def plot_figures_chart(County_Emissions, AD_SK, gridded_emissions, roads_RGS,
             ccc.loc[:,'total_emis'] = ccc.loc[:,'total_emis']
             fig, ax = plt.subplots(1, figsize = (13,8))
             ccc.plot(column='total_emis', cmap=GrayJet, linewidth=1.0, ax=ax,
-                               vmax = ccc.total_emis.max()*0.40)# ,edgecolor='0.8')
+                               vmax = ccc.total_emis.max()* adj_scale)# ,edgecolor='0.8')
             
             ax.set_title('Total Emissions of {0}-{1} [ton/yr]'.format(case_name,ipol), fontsize = 22)
             sm = plt.cm.ScalarMappable(cmap=GrayJet, 
                                        norm=plt.Normalize(vmin=ccc.total_emis.min(),
-                                                          vmax=ccc.total_emis.max() * 0.50))
+                                                          vmax=ccc.total_emis.max() * adj_scale))
             sm._A = []
             cbar = fig.colorbar(sm)
             #    ax.axis('off')
@@ -2552,12 +2554,12 @@ def plot_figures_chart(County_Emissions, AD_SK, gridded_emissions, roads_RGS,
             ddd = County_Emissions.county_total_WGT.loc[County_Emissions.county_total_WGT.pollutant == ipol]
             fig, ax = plt.subplots(1, figsize = (13,8))
             ddd.plot(column='total_emis', cmap=GrayJet, linewidth=0.8, ax=ax,
-                               vmax = ddd.total_emis.max()*0.40)# ,edgecolor='0.8')
+                               vmax = ddd.total_emis.max()* adj_scale)# ,edgecolor='0.8')
             
             ax.set_title('Total Emissions of {0}-{1} [ton/yr]'.format(case_name,ipol), fontsize = 22)
             sm = plt.cm.ScalarMappable(cmap=GrayJet, 
                                        norm=plt.Normalize(vmin=ddd.total_emis.min(),
-                                                          vmax=ddd.total_emis.max() * 0.40))
+                                                          vmax=ddd.total_emis.max() * adj_scale))
             sm._A = []
             cbar = fig.colorbar(sm)
             #    ax.axis('off')
@@ -2592,7 +2594,7 @@ def plot_figures_chart(County_Emissions, AD_SK, gridded_emissions, roads_RGS,
             plot_pol = gridded_emissions[gridded_emissions.pollutant == ipol]
             plot_pol['total_emis'] = plot_pol.loc[:,run_period.DateTime.loc[0:24]].sum(axis=1)
             vmin = 0
-            vmax = 0.4 * plot_pol['total_emis'].max()
+            vmax = adj_scale * plot_pol['total_emis'].max()
     
             fig, ax = plt.subplots(1, figsize = (13,8))
             plot_pol.plot(column='total_emis', cmap=GrayJet, linewidth=0.8, ax=ax,
@@ -2612,38 +2614,43 @@ def plot_figures_chart(County_Emissions, AD_SK, gridded_emissions, roads_RGS,
             else:
                 cbar.ax.set_ylabel(r'$mols{\cdot}day^{-1}$', fontsize=14)
     
-            name = '{0}_Grid_emis_SK_Total_emis_{1}.png'.format(case_name,ipol)
+            name = '{0}_Grid_Total_emis_{1}.png'.format(case_name,ipol)
             fig.savefig(output_dir+'/plots/'+name, bbox_inches = 'tight',dpi=200)
             plt.close()
     
     #Hourly gridded emissions Plots
     if plot_24 == 'yes':
-    	for ipol in polls:
-    		plot_pol = gridded_emissions[gridded_emissions.pollutant == ipol]
-    		vmin = 0
-    		vmax = 0.9 * plot_pol.loc[:,run_period.DateTime.loc[0:24]].max().max()
-    		for itime in run_period.DateTime.loc[0:24]:
-    			fig, ax = plt.subplots(1, figsize = (13,8))
-    			plot_pol.plot(column=plot_pol[itime], cmap=GrayJet, linewidth=0.8, ax=ax,
-    							   vmax = vmax)# ,edgecolor='0.8')
+        for ipol in polls:
+            plot_pol = gridded_emissions[gridded_emissions.pollutant == ipol]
+            vmin = 0
+            vmax = adj_scale * plot_pol.loc[:,run_period.DateTime.loc[0:24]].max().max()
+            for itime in run_period.DateTime.loc[0:24]:
+                fig, ax = plt.subplots(1, figsize = (13,8))
+                plot_pol.plot(column=plot_pol[itime], cmap=GrayJet, linewidth=0.8, ax=ax,
+                              vmax = vmax)# ,edgecolor='0.8')
     			
-    			ax.set_title('Grid Emissions of {0} - {1}'.format(case_name,ipol), fontsize = 22)
-    			sm = plt.cm.ScalarMappable(cmap=GrayJet, 
-    									   norm=plt.Normalize(vmin=vmin,
-    														  vmax=vmax))
-    			xpos = roads_RGS.surrogate.total_bounds[0] + 2000
-    			ypos = roads_RGS.surrogate.total_bounds[3] - 2000
-    			ax.text(xpos, ypos, '{0}:00H'.format(itime.hour), color='red', bbox=dict(facecolor='white', alpha=1))
-    			sm._A = []
-    			cbar = fig.colorbar(sm)
-    			cbar.ax.set_ylabel(r'$mols{\cdot}s^{-1}$', fontsize=12)
-    			#    ax.axis('off')
-    			if itime.hour < 10:
-    				name = 'Hourly_{0}_Grid_emis_SK_Total_emis_{1}_hour_0{2}.png'.format(case_name,ipol,itime.hour)
-    			else:
-    				name = 'Hourly_{0}_Grid_emis_SK_Total_emis_{1}_hour_{2}.png'.format(case_name,ipol,itime.hour)
-    			fig.savefig(output_dir+'/plots/'+name, bbox_inches = 'tight',dpi=150)
-    			plt.close()
+                ax.set_title('Grid Emissions of {0} - {1}'.format(case_name,ipol), fontsize = 22)
+                sm = plt.cm.ScalarMappable(cmap=GrayJet, 
+                                           norm=plt.Normalize(vmin=vmin, vmax=vmax))
+                xpos = roads_RGS.surrogate.total_bounds[0] + 2000
+                ypos = roads_RGS.surrogate.total_bounds[3] - 2000
+                ax.text(xpos, ypos, '{0}:00H'.format(itime.hour), color='red', bbox=dict(facecolor='white', alpha=1))
+                sm._A = []
+                cbar = fig.colorbar(sm)
+                particles = ['PAL','PCA','PCL','PEC','PFE','PH2O','PK',
+                             'PMC','PMG','PMN','PMOTHR','PNA','PNCOM',
+                             'PNH4','PNO3','POC','PSI','PSO4','PTI']
+                if ipol in particles:
+                    cbar.ax.set_ylabel(r'$grams{\cdot}day^{-1}$', fontsize=14)
+                else:
+                    cbar.ax.set_ylabel(r'$mols{\cdot}day^{-1}$', fontsize=14)
+
+                if itime.hour < 10:
+                    name = 'Hourly_{0}_Grid_emis_SK_Total_emis_{1}_hour_0{2}.png'.format(case_name,ipol,itime.hour)
+                else:
+                    name = 'Hourly_{0}_Grid_emis_SK_Total_emis_{1}_hour_{2}.png'.format(case_name,ipol,itime.hour)
+                fig.savefig(output_dir+'/plots/'+name, bbox_inches = 'tight',dpi=150)
+                plt.close()
         
     total_plot = ((time.time() - start_time_plot))
     print('')  
