@@ -362,7 +362,7 @@ GRID_info = read_griddesc(input_dir, gridfile_name, grid2CMAQ = grid2CMAQ)
 # Function to read Temporal information
 # =============================================================================
 def read_temporal_info(Temporal_Profile_Folder, Temporal_Monthly, Temporal_Week,
-                       Temporal_WeekDay, Temporal_WeekEnd, Temporal_CrossRef, Run_Period, sep = ';'):
+                       Temporal_WeekDay, Temporal_WeekEnd, Temporal_CrossRef, Run_Period):
     start_time = time.time()
     print('******************************************************************')
     print('*****           Processing temporal profile                  *****')
@@ -376,7 +376,7 @@ def read_temporal_info(Temporal_Profile_Folder, Temporal_Monthly, Temporal_Week,
 #    Temporal_Week      = 'week_profile.csv'
 #    Temporal_WeekDay   = 'weekday_profile.csv'
 #    Temporal_WeekEnd   = 'weekend_profile.csv'
-#    Temporal_CrossRef  = 'temporal_profile_CrossRef.csv'
+#    Temporal_CrossRef  = 'temporal_profile_CrossRef_Seoul.csv' #'temporal_profile_CrossRef.csv'
     month    = '{0}{1}'.format(temp_dir+'/',Temporal_Monthly)
     week     = '{0}{1}'.format(temp_dir+'/',Temporal_Week)
     weekday  = '{0}{1}'.format(temp_dir+'/',Temporal_WeekDay)
@@ -393,7 +393,10 @@ def read_temporal_info(Temporal_Profile_Folder, Temporal_Monthly, Temporal_Week,
             print ('')
             print ('*** Reading Temporal information : ***')
             print (ifl)
-    
+
+    with open(month, 'r') as csvfile:
+        sep = csv.Sniffer().sniff(csvfile.read(40960)).delimiter
+
     month_out    = pd.read_csv(month, sep = sep).fillna(np.nan)
     week_out     = pd.read_csv(week, sep = sep).fillna(np.nan)
     weekday_out  = pd.read_csv(weekday, sep = sep).fillna(np.nan)
@@ -441,13 +444,6 @@ def read_temporal_info(Temporal_Profile_Folder, Temporal_Monthly, Temporal_Week,
         diurnal_temp = diurnal_temp.append(aux_diurnal,ignore_index=True, sort=False)
     
     diurnal_temp = diurnal_temp.loc[:,['Day', 'fullname', 'road_type', 'profile']+list((np.arange(0,24)).astype(str))]
-#    cols = list(diurnal_temp.columns)
-#    if ('weekday') and ('weekend') in list(diurnal_temp.columns):
-#        diurnal_temp = diurnal_temp.drop(columns=['weekday','weekend'])
-#    elif ('weekday' in cols) and ('weekend' not in cols):
-#        diurnal_temp = diurnal_temp.drop(columns=['weekday'])
-#    elif ('weekday' not in cols) and ('weekend' in cols):
-#    
         
     run_time = ((time.time() - start_time))
     print('---     Elapsed time in seconds = {0}     ---'.format(run_time))
@@ -469,16 +465,14 @@ TempPro = read_temporal_info(temporal_profile_folder, temporal_monthly_file, tem
 # =============================================================================
 # Function to read Chemical speciation
 # =============================================================================
-def read_chemical_info(Chemical_Speciation_Folder, PM25_Speciation, VOC_Speciation,
-                          NOx_Speciation, Speciation_CrossRef, sep = ';'):
+def read_chemical_info(Chemical_Speciation_Folder, chemical_profile, Speciation_CrossRef):
     start_time = time.time()
-    spec_dir = Chemical_Speciation_Folder
-    pm25     = '{0}{1}'.format(spec_dir+'/',PM25_Speciation)
-    voc      = '{0}{1}'.format(spec_dir+'/',VOC_Speciation)
-    nox      = '{0}{1}'.format(spec_dir+'/',NOx_Speciation)
-    crossref = '{0}{1}'.format(spec_dir+'/',Speciation_CrossRef)
+    spec_dir = Chemical_Speciation_Folder  #chemical_profile_folder#
+    chempro  = '{0}{1}'.format(spec_dir+'/',chemical_profile)
+    crossref = '{0}{1}'.format(spec_dir+'/',Speciation_CrossRef) #speciation_CrossRef)#
     
-    files = [pm25, voc, nox, crossref]
+
+    files = [chempro, crossref]
     for ifl in files:
         if os.path.exists(ifl) == False:
             print ('')
@@ -488,24 +482,26 @@ def read_chemical_info(Chemical_Speciation_Folder, PM25_Speciation, VOC_Speciati
             print ('')
             print ('*** Reading Chemical Speciation information ... ***')
             print (ifl)
-    
-    pm25_out     = pd.read_csv(pm25, sep = sep).fillna(0)
-    voc_out      = pd.read_csv(voc, sep = sep).fillna(0)
-    nox_out      = pd.read_csv(nox, sep = sep).fillna(0)
-    crossref_out = pd.read_csv(crossref, sep = sep).fillna(0)
 
-    pm25_out.columns = map(str.lower, pm25_out.columns)
-    voc_out.columns  = map(str.lower, voc_out.columns)
-    nox_out.columns  = map(str.lower, nox_out.columns)
+    with open(chempro, 'r') as csvfile:
+        sep = csv.Sniffer().sniff(csvfile.read(100000)).delimiter  
+        
+    chempro_out  = pd.read_csv(chempro, sep = sep, comment='#', 
+                               header=None, usecols=[0,1,2,3,4],
+                               names=['profile', 'pollutant', 'species', 'fraction', 'mw'],
+                               engine ='python').fillna(0)
+    chempro_out['pollutant'] = chempro_out['pollutant'].str.replace('_','.')
+    chempro_out['pollutant'] = chempro_out['pollutant'].str.upper()
+    crossref_out = pd.read_csv(crossref, sep = sep, dtype=str).fillna(0)
+
     run_time = ((time.time() - start_time))
     print('---     Elapsed time in seconds = {0}     ---'.format(run_time))
     print('---     Elapsed time in minutes = {0}     ---'.format(run_time/60))
     print('---     Elapsed time in   hours = {0}     ---'.format(run_time/3600))    
-    return Chemical_Speciation_table(pm25_out, voc_out, nox_out, crossref_out)
+    return Chemical_Speciation_table(chempro_out, crossref_out)
 
 
-Chemical_Spec_Table = read_chemical_info(chemical_profile_folder, pm25_speciation_file, voc_speciation_file,
-                           nox_speciation_file, speciation_CrossRef)
+Chemical_Spec_Table = read_chemical_info(chemical_profile_folder, chemical_profile, speciation_CrossRef)
 
 
 # =============================================================================
@@ -1116,12 +1112,13 @@ def read_emissions_factor_SK(input_dir, EmisFactor_list):
                     drop_list.append(pos)
                 iaux +=1
             emissions_factor = emissions_factor.drop(index=drop_list)
-            emissions_factor['years'] =  emissions_factor['years'] / 10000
-            emissions_factor['years'] =  emissions_factor.years.astype(int)
-            emissions_factor.loc[:,'vehicle'] = emissions_factor.loc[:,'vehicle'].str.lower()
-            emissions_factor.loc[:,'types'] = emissions_factor.loc[:,'types'].str.lower()
-            emissions_factor.loc[:,'fuel'] = emissions_factor.loc[:,'fuel'].str.lower()
-            emissions_factor['fullname'] = emissions_factor.vehicle.str.cat(emissions_factor[['types','fuel']], sep='_')
+            emissions_factor['years']           =  emissions_factor['years'] / 10000
+            emissions_factor['years']           =  emissions_factor.years.astype(int)
+            emissions_factor.loc[:,'pollutant'] = emissions_factor.loc[:,'pollutant'].str.upper()
+            emissions_factor.loc[:,'vehicle']   = emissions_factor.loc[:,'vehicle'].str.lower()
+            emissions_factor.loc[:,'types']     = emissions_factor.loc[:,'types'].str.lower()
+            emissions_factor.loc[:,'fuel']      = emissions_factor.loc[:,'fuel'].str.lower()
+            emissions_factor['fullname']        = emissions_factor.vehicle.str.cat(emissions_factor[['types','fuel']], sep='_')
             emissions_factor.loc[:,['a', 'b', 'c', 'd', 'f', 'k']] =  emissions_factor.loc[:,['a', 'b', 'c', 'd', 'f', 'k']].astype(float)
             
             vhc  = emissions_factor.fullname.unique()
@@ -1217,17 +1214,17 @@ def calculate_EmisFact(Input_dir, Emissions_Factor_Table, Out_dir ):
         dat_EF = dat_EF.append(aux_EF, ignore_index=True, sort=False)
     
     dat_EF['ambient_temp'] = ((dat_EF.spd * 0 ) + temp_mean).astype(int)
-    dat_EF['spd']   = dat_EF['spd'].astype(int)
-    dat_EF['years'] = dat_EF['years'].astype(int)
-    
-    #Extracting the NOx Diesel EF from final EF table
+    dat_EF['spd']          = dat_EF['spd'].astype(int)
+    dat_EF['years']        = dat_EF['years'].astype(int)
+    dat_EF['pollutant']    = dat_EF['pollutant'].str.upper()
+    #Extracting the NOX Diesel EF from final EF table
     Temp_EF_Diesel = dat_EF[(dat_EF.temperatures != 0) & 
-                            (dat_EF.pollutant == 'NOx')]
+                            (dat_EF.pollutant == 'NOX')]
     Temp_EF_Diesel_drop_list = list(Temp_EF_Diesel.index)
     dat_EF = dat_EF.drop(index=Temp_EF_Diesel_drop_list).reset_index(drop=True)
     Temp_EF_Diesel = Temp_EF_Diesel.reset_index(drop=True)
     
-    #Filtering the NOx Diesel EF based on the ambient temperature
+    #Filtering the NOX Diesel EF based on the ambient temperature
     filter_temp_diesel = []
     for tlim in Temp_EF_Diesel.temperatures.unique():
         if len(tlim) <= 4:
@@ -1272,9 +1269,9 @@ def calculate_EmisFact(Input_dir, Emissions_Factor_Table, Out_dir ):
             
     dat_EF = dat_EF.drop(index=drop_list).reset_index(drop=True)
     
-    #Filtering the duplicate EF of NOx Diesel - we are averaging them
+    #Filtering the duplicate EF of NOX Diesel - we are averaging them
     Temp_EF_Diesel = dat_EF[(dat_EF.temperatures != 0) & 
-                            (dat_EF.pollutant == 'NOx')]
+                            (dat_EF.pollutant == 'NOX')]
     Temp_EF_Diesel_drop_list = list(Temp_EF_Diesel.index)
     dat_EF = dat_EF.drop(index=Temp_EF_Diesel_drop_list).reset_index(drop=True)
     Temp_EF_Diesel = Temp_EF_Diesel.groupby(['fullname','pollutant','temperatures','v','years','ambient_temp','spd']).mean()
@@ -1310,37 +1307,42 @@ def check_VHC_AD_EF(Emissions_Factor_DataFrame, Activity_Data_DataFrame, Out_dir
     EFdf = Emissions_Factor_DataFrame
     ADdf = Activity_Data_DataFrame
     OutD = Out_dir
-    EFvhc = EFdf.EF_fullname.EF_fullname.tolist()
-    ADvhc = ADdf.fullname.vhc_name.tolist()
-    print('')
-    print('******************************************************************')
-    print('***** Checking if vehicle if all Vehicles have Emission Factor ***')
-    print('*****            Please wait and check the LOG...            *****')
-    print('******************************************************************')
-    print('')
-    log_name = 'LOG_Missing_Vehicle_EmissionFactor.txt'
-    with open(OutD+'/LOGS/'+log_name, 'w') as log:
-        log.write('# ***** Vehicles without Emissions Factors *****\n')
-        log.write('# \n')
-        log.write('vehicle_types_fuel\n')
-        for ivhc in ADvhc:
-            if ivhc not in EFvhc:
-                log.write('{0}\n'.format(ivhc))
+    try:
+        ADdf
+        a = True
+    except: a = False
+    
+    try:
+        EmisFactor_yr_spd
+        b = True
+    except: b = False
+    
+    if (a == True) and (type(ADdf) is (Activity_Data_table)) and \
+       (b == True) and (type(EFdf) is (EF_Grid_table)):
+        EFvhc = EFdf.EF_fullname.EF_fullname.tolist()
+        ADvhc = ADdf.fullname.vhc_name.tolist()
+        print('')
+        print('******************************************************************')
+        print('***** Checking if vehicle if all Vehicles have Emission Factor ***')
+        print('*****            Please wait and check the LOG...            *****')
+        print('******************************************************************')
+        print('')
+        log_name = 'LOG_Missing_Vehicle_EmissionFactor.txt'
+        with open(OutD+'/LOGS/'+log_name, 'w') as log:
+            log.write('# ***** Vehicles without Emissions Factors *****\n')
+            log.write('# \n')
+            log.write('vehicle_types_fuel\n')
+            for ivhc in ADvhc:
+                if ivhc not in EFvhc:
+                    log.write('{0}\n'.format(ivhc))
+    else:
+        print('')
+        print('*** ERROR ABORT ***: Check if the Activity data and Emissions Factor were processed')
+        print('')
+        sys.exit()
     return       
 
-
-try:
-    AD_SK
-    a = True
-except: a = False
-
-try:
-    EmisFactor_yr_spd
-    b = True
-except: b = False
-
-if (a == True) and (b == True):
-    check_VHC_AD_EF(EmisFactor_yr_spd, AD_SK, output_dir)
+check_VHC_AD_EF(EmisFactor_yr_spd, AD_SK, output_dir)
 
 # =============================================================================
 # Function to apply Deterioration rate into the emissions factor from South Korea
@@ -1673,7 +1675,7 @@ def calc_County_Emissions(Input_dir, Emissions_Factor_DataFrame,
         sys.exit('')
     
     cold_start_aux = Emissions_by_yr_county.loc[(Emissions_by_yr_county.road_type.isin(ColdStart_roads)) &
-                                                Emissions_by_yr_county.pollutant.isin(['CO','VOC','NOx','PM2.5'])].reset_index(drop=True)
+                                                Emissions_by_yr_county.pollutant.isin(['CO','VOC','NOX','PM2.5'])].reset_index(drop=True)
     
     cold_start_aux = cold_start_aux.loc[:,['manufacture_date','region_cd','road_type','pollutant']+CS_vhc_list]
 
@@ -1681,7 +1683,7 @@ def calc_County_Emissions(Input_dir, Emissions_Factor_DataFrame,
     
     EcEh_Gasoline_CO  =  beta * ((9.040 - 0.090 * temp_mean) - 1)
     EcEh_Gasoline_VOC =  beta * ((12.59 - 0.060 * temp_mean) - 1)
-    EcEh_Gasoline_NOx =  beta * ((3.660 - 0.006 * temp_mean) - 1)
+    EcEh_Gasoline_NOX =  beta * ((3.660 - 0.006 * temp_mean) - 1)
 
     EcEh_Diesel_CO    =  beta * ((1.900 - 0.030 * temp_mean) - 1)
     if temp_mean > 29:
@@ -1689,7 +1691,7 @@ def calc_County_Emissions(Input_dir, Emissions_Factor_DataFrame,
     else:
         EcEh_Diesel_VOC   =  beta * ((3.100 - 0.090 * temp_mean) - 1)
 
-    EcEh_Diesel_NOx   =  beta * ((1.300 - 0.013 * temp_mean) - 1)
+    EcEh_Diesel_NOX   =  beta * ((1.300 - 0.013 * temp_mean) - 1)
 
     if temp_mean > 26:
         EcEh_Diesel_PM    =  beta * 0.5
@@ -1704,12 +1706,12 @@ def calc_County_Emissions(Input_dir, Emissions_Factor_DataFrame,
     else:
         EcEh_LPG_VOC      =  beta * ((2.240 - 0.060 * temp_mean) - 1)
         
-    EcEh_LPG_NOx      =  beta * ((0.980 - 0.006 * temp_mean) - 1)
+    EcEh_LPG_NOX      =  beta * ((0.980 - 0.006 * temp_mean) - 1)
     
-    aux_dict = {'pollutant' : ['CO','VOC','NOx','PM2.5'],
-                'gasoline'  : [EcEh_Gasoline_CO, EcEh_Gasoline_VOC, EcEh_Gasoline_NOx, 0.0],
-                'diesel'    : [EcEh_Diesel_CO  , EcEh_Diesel_VOC  , EcEh_Diesel_NOx  , EcEh_Diesel_PM],
-                'lpg'       : [EcEh_LPG_CO     , EcEh_LPG_VOC     , EcEh_LPG_NOx     , 0.0]}
+    aux_dict = {'pollutant' : ['CO','VOC','NOX','PM2.5'],
+                'gasoline'  : [EcEh_Gasoline_CO, EcEh_Gasoline_VOC, EcEh_Gasoline_NOX, 0.0],
+                'diesel'    : [EcEh_Diesel_CO  , EcEh_Diesel_VOC  , EcEh_Diesel_NOX  , EcEh_Diesel_PM],
+                'lpg'       : [EcEh_LPG_CO     , EcEh_LPG_VOC     , EcEh_LPG_NOX     , 0.0]}
     
     EcEhBeta_df = pd.DataFrame(aux_dict)
     EcEhBeta_df.loc[:,ColdStart_fuels] = EcEhBeta_df.loc[:,ColdStart_fuels].clip(lower=0)
@@ -1717,7 +1719,7 @@ def calc_County_Emissions(Input_dir, Emissions_Factor_DataFrame,
     cold_start_emissions = pd.DataFrame()
     for ifuel in ColdStart_fuels:
         aux_CS_emis = pd.DataFrame()
-        for ipol in ['CO','VOC','NOx','PM2.5']:
+        for ipol in ['CO','VOC','NOX','PM2.5']:
             aux_CS_vhc = list(cold_start_aux.loc[cold_start_aux.pollutant.isin([ipol]),
                                cold_start_aux.columns.str.contains(ifuel)].columns)
             aux_CS_cols = ['manufacture_date', 'region_cd', 'road_type', 'pollutant']
@@ -1756,13 +1758,13 @@ def calc_County_Emissions(Input_dir, Emissions_Factor_DataFrame,
     
     print('')
     print('******************************************************************')
-    print('*****      Calculating the Evaporatiuve Emissions ...        *****')
+    print('*****      Calculating the Evaporative Emissions ...        *****')
     print('*****                    Please wait ...                     *****')
     print('******************************************************************')
     print('')
 
     '''
-    Calculating the Evaporatiuve Emissions
+    Calculating the Evaporative Emissions
     beta = 0.647 - (0.025 * 1Trip) - (0.00974 - 0.000385 * 1Trip)* temp_mean
     1Trip = 12.35km - This value came from South Korea survey and it means that
     each vehicle run, on average, 12.35 km per day
@@ -1896,7 +1898,7 @@ def calc_County_Emissions(Input_dir, Emissions_Factor_DataFrame,
     total_county_WGT = pd.merge(total_county_WGT, aux_df_wgt.loc[:,['region_cd','region_state','vkt_weight']], 
                                 left_on=['region_state'], right_on=['region_state'], how='left')
     total_county_WGT.loc[:,ADvhc] = total_county_WGT.loc[:,ADvhc].apply(lambda x: np.asarray(x) * total_county_WGT.vkt_weight.values)
-    total_county_WGT = total_county_WGT.loc[:,['region_cd','pollutant']+ADvhc]
+    total_county_WGT = total_county_WGT.loc[:,['region_cd','pollutant', 'vkt_weight']+ADvhc]
     total_county_WGT = pd.merge(total_county_WGT, total_county.loc[:,['region_cd', 'pollutant', 'geometry']],
                                 left_on  = ['region_cd', 'pollutant'],
                                 right_on = ['region_cd', 'pollutant'], how='left')
@@ -2073,13 +2075,13 @@ def aplly_control(Control_list_file, County_Emissions_df, County_SHP_df):
             apply_factor_sta = pd.merge(apply_factor_sta, appd_CF, 
                                         left_on=['region_state','pollutant', 'manufacture_date'],
                                         right_on=['region_general','data','year'],
-                                        how='left')
+                                        how='left').fillna(1.0)
             apply_factor_sta = apply_factor_sta.drop(columns=['region_general','data','year'])
             sta_vhc.extend(list(aux_irg.fullname.unique()))
         elif (len(str(irgn)) == 8) or (len(str(irgn)) == 7):
             apply_factor_cnt = pd.merge(apply_factor_cnt, appd_CF, 
                                         left_on=['region_cd','pollutant', 'manufacture_date'],
-                                        right_on=['region_general','data','year'],how='left')
+                                        right_on=['region_general','data','year'],how='left').fillna(1.0)
             apply_factor_cnt = apply_factor_cnt.drop(columns=['region_general','data','year'])
             cnt_vhc.extend(list(aux_irg.fullname.unique()))
         else:
@@ -2096,7 +2098,7 @@ def aplly_control(Control_list_file, County_Emissions_df, County_SHP_df):
             aux_all_cf = aux_all_cf.rename(columns={'region_cd' : 'region_general'})
             apply_factor_sta = pd.merge(apply_factor_sta,aux_all_cf, 
                                         left_on  =['region_state', 'manufacture_date'],
-                                        right_on =['region_general', 'year'], how='left')
+                                        right_on =['region_general', 'year'], how='left').fillna(1.0)
             apply_factor_sta = apply_factor_sta.drop(columns=['region_general','data','year'])
             
         elif (len(str(irgn)) == 8) or (len(str(irgn)) == 7):
@@ -2108,7 +2110,7 @@ def aplly_control(Control_list_file, County_Emissions_df, County_SHP_df):
 
             apply_factor_cnt = pd.merge(apply_factor_cnt,aux_all_cf, 
                                         left_on  =['region_cd', 'manufacture_date'],
-                                        right_on =['region_general', 'year'], how='left')
+                                        right_on =['region_general', 'year'], how='left').fillna(1.0)
 
             apply_factor_cnt = apply_factor_cnt.drop(columns=['region_general','year'])
             
@@ -2187,9 +2189,8 @@ else:
 
 
 
-
 # =============================================================================
-# Function to apply chemical into emissions of PM2.5, VOC and NOx
+# Function to apply chemical into emissions of PM2.5, VOC and NOX
 # =============================================================================
 def chemical_speciation(Input_dir, County_Emissions_DataFrame, Activity_Data_DataFrame,
                         Chemical_Speciation_Table):
@@ -2201,106 +2202,141 @@ def chemical_speciation(Input_dir, County_Emissions_DataFrame, Activity_Data_Dat
 
     start_time = time.time()
     input_dir = Input_dir
-    cnty_emis =  County_Emissions_DataFrame  #County_Emissions    #
-    act_data  =  Activity_Data_DataFrame     #AD_SK               #
-    ChemSpec  = Chemical_Speciation_Table    #Chemical_Spec_Table #
-    nvhc = list(np.sort(act_data.fullname.vhc_name))
-    pol_ChemSpec = ['PM2.5', 'VOC', 'NOx'] #list(ChemSpec.crossref.columns[3:])
+    
+    cnty_emis = County_Emissions_DataFrame  #
+    act_data  = Activity_Data_DataFrame     #
+    ChemSpec  = Chemical_Speciation_Table   #
+    
+#    cnty_emis = County_Emissions    #County_Emissions_DataFrame  #
+#    act_data  = AD_SK               #Activity_Data_DataFrame     #
+#    ChemSpec  = Chemical_Spec_Table  #Chemical_Speciation_Table   #
+#
+    nvhc = list(np.sort(act_data.fullname.vhc_name)) #vehicles from activity data
+
+    
+    pol_inv      = list(cnty_emis.county_total.pollutant.unique())
+    pol_crossref = list(ChemSpec.crossref.columns[3:])
+    pol_profile  = list(ChemSpec.chempro.pollutant.unique())
+    
     crossref = ChemSpec.crossref.copy()
     crossref['fullname'] = crossref.vehicle.str.cat(crossref[['types','fuel']], sep='_')
-    County_Emissions_ChemSpec = cnty_emis.county_total_WGT.copy()
-    grams_sec_pol = []
+    vhc_CR = pd.DataFrame({'vhc_CR' : list(crossref['fullname'].unique())})
+    cnty_emis_WGT = cnty_emis.county_total_WGT.copy()
     
-    for ipol in pol_ChemSpec:
-        if ipol == 'PM2.5':
-            print('')
-            print('*****              Calculating for PM2.5             *****')
-            print('')
-            
-            split_pol = list(ChemSpec.PM2_5_spec.pollutant.unique())
-            ChemSpec.PM2_5_spec.loc[:,'mw_factor'] = ChemSpec.PM2_5_spec.loc[:,'fraction'] / \
-                                                    ChemSpec.PM2_5_spec.loc[:,'mw']
-            aux_chem  = ChemSpec.PM2_5_spec.pivot(index='profile', columns='pollutant',
-                                                  values='mw_factor').fillna(0).reset_index(drop=False)
-            aux_CR = crossref.loc[:,['fullname',ipol]]
-            aux_CR = pd.merge(aux_CR,aux_chem, left_on = ipol, 
-                                          right_on = ['profile'], how='left')
-            grams_sec_pol.extend(ChemSpec.PM2_5_spec.pollutant.loc[ChemSpec.PM2_5_spec.mw == 1].drop_duplicates().to_list())
-        elif ipol == 'NOx':
-            print('')
-            print('*****              Calculating for NOx               *****')
-            print('')
-            
-            split_pol = list(ChemSpec.NOx_spec.pollutant.unique())
-            ChemSpec.NOx_spec.loc[:,'mw_factor'] = ChemSpec.NOx_spec.loc[:,'fraction'] / \
-                                                  ChemSpec.NOx_spec.loc[:,'mw']
-            aux_chem  = ChemSpec.NOx_spec.pivot(index='profile', columns='pollutant',
-                                                  values='mw_factor').fillna(0).reset_index(drop=False)
-            aux_CR = crossref.loc[:,['fullname',ipol]]
-            aux_CR = pd.merge(aux_CR,aux_chem, left_on = ipol, 
-                                          right_on = ['profile'], how='left')
-            grams_sec_pol.extend(ChemSpec.NOx_spec.pollutant.loc[ChemSpec.NOx_spec.mw == 1].drop_duplicates().to_list())
+    if False in list(act_data.fullname['vhc_name'].isin(vhc_CR['vhc_CR'])):
+        vhc_CR = pd.merge(vhc_CR, act_data.fullname['vhc_name'], 
+                          left_on='vhc_CR', right_on='vhc_name', how='right').fillna(-999)
+        missing_VHC = vhc_CR['vhc_name'].loc[vhc_CR['vhc_CR'] == -999].reset_index(drop=True)
+        missing_log_name = 'missing_vehicles_in_cross_refence_table.csv'
+        with open(output_dir+'/LOGS/'+missing_log_name, 'w') as MCF_log:
+            MCF_log.write('*****   List of missing vehicle in Cross Reference table    *****\n')
+            missing_VHC.to_csv(MCF_log, index=False, header=False, line_terminator='\n')
+        print('')
+        print('*** ERROR: There are missing vehicles in the Cross Refence file')
+        print('*** ERROR: Please, check the LOG file: {0}'.format(missing_log_name))
+        print('')
+        sys.exit()
 
-        elif ipol == 'VOC':
-            print('')
-            print('*****              Calculating for VOC               *****')
-            print('')
-            
-            split_pol = list(ChemSpec.VOC_spec.pollutant.unique())
-            ChemSpec.VOC_spec.loc[:,'mw_factor'] = ChemSpec.VOC_spec.loc[:,'fraction'] / \
-                                                  ChemSpec.VOC_spec.loc[:,'mw']
-            aux_chem  = ChemSpec.VOC_spec.pivot(index='profile', columns='pollutant',
-                                                  values='mw_factor').fillna(0).reset_index(drop=False)
-            aux_CR = crossref.loc[:,['fullname',ipol]]
-            aux_CR = pd.merge(aux_CR,aux_chem, left_on = ipol, 
-                                          right_on = ['profile'], how='left')
-            grams_sec_pol.extend(ChemSpec.VOC_spec.pollutant.loc[ChemSpec.VOC_spec.mw == 1].drop_duplicates().to_list())
-
-        else:
-            print('')
-            print('*** ERROR ABORT ***:')
-            print('*****   There is no pollutant named as {0}     *****'.format(ipol))
-            print('*****   Please review your input tables        *****')
-            print('*****   Make sure that all tables have the same and equal pollutants names *****')
-            print('')
-            sys.exit('*** ERROR ABORT ***: Differeces in pollutants name. Check your input files')
+    if ('PM10' in pol_inv) and ('PM2.5' in pol_inv):
+        print('')
+        print('***: Calculating the PMC emissions based on difference PM10 - PM2.5')
+        print('')
+        pmc_emis = cnty_emis_WGT.loc[cnty_emis_WGT.pollutant == 'PM10'].reset_index(drop=True)
+        pmc_emis.loc[:,nvhc] = pmc_emis.loc[:,nvhc] - \
+        cnty_emis_WGT.loc[cnty_emis_WGT.pollutant == 'PM2.5', nvhc].reset_index(drop=True)
+        pmc_emis.loc[:,nvhc] = pmc_emis.loc[:,nvhc].clip(lower=0)
+        pmc_emis['total_emis'] = pmc_emis.loc[:,nvhc].sum(axis=1)
+        pmc_emis['pollutant']  = 'PMC'
+        cnty_emis_WGT = cnty_emis_WGT.append(pmc_emis, ignore_index=True)
+        pol_inv.extend(['PMC'])
+    elif ('PM10' not in pol_inv) or ('PM2.5' not in pol_inv):
+        print('')
+        print('***: PM10 or PM2.5 is missing in the emissions dataframe')
+        print('***: The PMC can not be calculated, please check your EF input table')
+        print('***: Setting PMC to zero (0)')
+        print('')
+        ipmc = pol_inv[0]
+        pmc_emis = cnty_emis_WGT.loc[cnty_emis_WGT.pollutant == ipmc].reset_index(drop=True)
+        pmc_emis.loc[:,nvhc] = pmc_emis.loc[:,nvhc] * 0
+        pmc_emis['pollutant']  = 'PMC'
+        pmc_emis['total_emis'] = 0.0
+        cnty_emis_WGT = cnty_emis_WGT.append(pmc_emis, ignore_index=True)
+        pol_inv.extend(['PMC'])
         
-        for splt_pol in split_pol:
-            aux_ChemSpec         = aux_CR.loc[:,[splt_pol,'fullname']]
-            aux_ChemSpec         = aux_ChemSpec.T
-            aux_ChemSpec.columns = aux_ChemSpec.loc['fullname',:]
-            aux_ChemSpec         =  aux_ChemSpec.drop(index='fullname')
-            
-            split_total = (cnty_emis.county_total_WGT.loc[(cnty_emis.county_total_WGT.pollutant == ipol)].reset_index(drop=True)).copy()
-            split_total['pollutant'] = splt_pol
-            apply_ChemSpec = (aux_ChemSpec.append([aux_ChemSpec] * (split_total.shape[0] - 1),ignore_index=True)).reset_index(drop=True)
-            split_total.loc[:,nvhc] = (split_total.loc[:,nvhc]).mul(apply_ChemSpec, axis='columns')
-            County_Emissions_ChemSpec = County_Emissions_ChemSpec.append(split_total,ignore_index=True)
+    grams_sec_pol = list(ChemSpec.chempro.species.loc[ChemSpec.chempro.mw == 1].unique())
+    grams_sec_pol.extend(['PM2.5', 'PM10', 'PMC'])
     
-    for jpol in ['CO','SOx']:
-        if jpol in list(County_Emissions_ChemSpec.pollutant.unique()):
+#    ipol = 'CO'  #'PM2.5'
+    chem_factor_df = pd.DataFrame()
+    for ipol in pol_inv:
+        if (ipol in pol_crossref) and (ipol in pol_profile):
+            aux_chempro = ChemSpec.chempro.loc[ChemSpec.chempro.pollutant.isin([ipol])].reset_index(drop=True)
+            aux_chempro['mw_factor'] = aux_chempro.loc[:,'fraction'] / aux_chempro.loc[:,'mw']
+            if False in list(crossref[ipol].isin(aux_chempro.profile)):
+                miss = pd.DataFrame({'miss' : list(crossref[ipol].isin(aux_chempro.profile))})
+                miss_pfl = list(crossref[ipol].loc[miss['miss'].loc[miss['miss'].isin([False])].index].unique())
+                for ipfl in miss_pfl:
+                    print('')
+                    print('*** ERROR: Cross reference profile {0} for {1} is missing in the chemical profile'.format(ipfl,ipol))
+                    print('*** ERROR: Please, add the profile {0} in the chemical profile file'.format(ipfl))
+                    print('')
+                    sys.exit()
+            else:
+                aux_chempro = aux_chempro.loc[aux_chempro.profile.isin(crossref[ipol])].reset_index(drop=True)
+                aux_chempro = pd.merge(crossref.loc[:,['fullname', ipol]], aux_chempro, 
+                               left_on=ipol, right_on='profile', how='left')
+                aux_chempro = aux_chempro.pivot(index='species', columns='fullname', values='mw_factor').reset_index(drop=False).fillna(0.0)
+                aux_chempro['pollutant'] = ipol
+        elif (ipol in pol_crossref) and (ipol not in pol_profile):
             print('')
-            print('*****              Calculating for {0}                *****'.format(jpol))
+            print('*** ERROR: There is no pollutant {0} is the chemical profile file'.format(ipol))
+            print('*** ERROR: Please, add a profile for the pollutant {0} in the chemical profile file'.format(ipol))
             print('')
-            
-            if (jpol == 'CO') or (jpol == 'co'):
-                MW = 28.01  #molar mass for CO = 28.01 g/mol
-            elif (jpol == 'SOx') or (jpol == 'SO2'):
-                print('*****              Coverting SOx to SO2              *****')
-                MW = 64.066 #molar mass for SO2 =  64.066 g/mol
-            
-            drop_rows = list(County_Emissions_ChemSpec.loc[County_Emissions_ChemSpec.pollutant.isin([jpol]),nvhc].index)
-            aux_jpol = County_Emissions_ChemSpec.loc[County_Emissions_ChemSpec.pollutant.isin([jpol])].reset_index(drop=True)
-            aux_jpol.loc[:,nvhc] = aux_jpol.loc[:,nvhc].div(MW, axis='columns')  
-            if jpol == 'SO2' : aux_jpol.loc[:,'pollutant'] = 'SO2'
-            County_Emissions_ChemSpec = County_Emissions_ChemSpec.drop(index=drop_rows).reset_index(drop=True)
-            County_Emissions_ChemSpec = County_Emissions_ChemSpec.append(aux_jpol, ignore_index=True, sort=False).reset_index(drop=True)
-    
-    if 'PM2.5' in list(County_Emissions_ChemSpec.pollutant.unique()): grams_sec_pol.extend(['PM2.5'])
-    if 'PM10' in list(County_Emissions_ChemSpec.pollutant.unique()): grams_sec_pol.extend(['PM10'])
-    moles_sec_pol = pd.DataFrame({ 'pollutant' : list(County_Emissions_ChemSpec.pollutant.unique())})
-    moles_sec_pol = moles_sec_pol.loc[~moles_sec_pol.pollutant.isin(grams_sec_pol)].reset_index(drop=True)
-    grams_sec_pol = pd.DataFrame({ 'pollutant' : grams_sec_pol})
+            sys.exit()
+        else:
+            if ipol in list(['PM10', 'PMC']):
+                print('')
+                print('*** WARNING: Pollutant {0} is not in the Cross reference file'.format(ipol))
+                print('*** WARNING: Molar mass for pollutant {0} is 1, because there is no need to change it to molar basis'.format(ipol))
+                print('*** WARNING: Setting Molar weight to 1 (one) for the pollutant {0}'.format(ipol))
+                print('')
+            else:
+                print('')
+                print('*** WARNING: Pollutant {0} is not in the Cross reference file'.format(ipol))
+                print('*** WARNING: Please, add a new column for the pollutant {0} in the cross refenrece'.format(ipol))
+                print('*** WARNING: Setting Molar weight to 1 (one) for the pollutant {0}'.format(ipol))
+                print('')          
+            aux_chempro = crossref.loc[:,['fullname']]
+            aux_chempro['species']   = ipol
+            aux_chempro['mw_factor'] = 1.0
+            aux_chempro = aux_chempro.pivot(index='species', columns='fullname', values='mw_factor').reset_index(drop=False).fillna(0.0)
+            aux_chempro['pollutant'] = ipol
+
+        chem_factor_df = chem_factor_df.append(aux_chempro, ignore_index=True)        
+
+
+    County_Emissions_ChemSpec = pd.merge(cnty_emis_WGT,
+                                         chem_factor_df.loc[:,['species', 'pollutant']], 
+                                         left_on='pollutant', right_on='pollutant', how='left')
+
+    chem_factor_df = pd.merge(cnty_emis_WGT.loc[:,['region_cd', 'pollutant']],
+                              chem_factor_df,                             
+                              left_on='pollutant', right_on='pollutant', how='left')
+
+    County_Emissions_ChemSpec.loc[:,nvhc] = County_Emissions_ChemSpec.loc[:,nvhc] * \
+                                            chem_factor_df.loc[:,nvhc]
+    '''
+    # The emissions calculated in the  previous steps is outputed as Tons/year
+    # And the molar Mass is mols/grams. So, we need to bring it to grams
+    # to do it, we just need to multiply by 10**6, and our unit is now mols/year
+    # Later, in temporal variation, this value will converted into mols/hour
+    '''
+    County_Emissions_ChemSpec.loc[:,nvhc] = County_Emissions_ChemSpec.loc[:,nvhc] * 1000000
+    County_Emissions_ChemSpec['total_emis'] = County_Emissions_ChemSpec.loc[:,nvhc].sum(axis=1)
+   
+    moles_sec_pol = pd.DataFrame({ 'species' : list(County_Emissions_ChemSpec.species.unique())})
+    moles_sec_pol = moles_sec_pol.loc[~moles_sec_pol.species.isin(grams_sec_pol)].reset_index(drop=True)
+    grams_sec_pol = pd.DataFrame({ 'species' : grams_sec_pol})
     
     County_Emissions_ChemSpec['total_emis'] = County_Emissions_ChemSpec.loc[:,nvhc].sum(axis=1)
     County_Emissions_ChemSpec = County_Emissions_ChemSpec.fillna(0.0)
@@ -2324,167 +2360,193 @@ County_Emissions_ChemSpec = chemical_speciation(input_dir, County_Emissions,
 # Function to generate hourly emissions and Gridding
 # =============================================================================
 
-nvhc = list(np.sort(AD_SK.fullname.vhc_name))
+def gridded_emis_NC(Activity_data_DF, Temporal_profile, County_Emissions_ChemSpec,
+                   IOAPI_out = 'N', grid2CMAQ = 'N'):
+    grd_AD        = Activity_data_DF
+    grd_TempPro   = Temporal_profile
+    ChemSpec_emis = County_Emissions_ChemSpec.chemspec_emissions.copy()
 
-auxTP = TempPro.diurnalPro.groupby(['Day','fullname']).mean().reset_index(drop=False)
+#    grd_AD        = AD_SK
+#    grd_TempPro   = TempPro
+#    ChemSpec_emis = County_Emissions_ChemSpec.chemspec_emissions.copy()
 
-diurnalPro_out = pd.DataFrame(columns=['DateTime']+list(np.sort(auxTP.fullname.unique())))
-for iday in run_period.Day.unique():
-    auxDP = auxTP.loc[auxTP.Day == iday].T
-    auxDP.columns = list(auxDP.loc['fullname'])
-    auxDP = auxDP.drop(index=['Day','fullname']).reset_index(drop=True)
-    auxDP = auxDP.sort_index(axis=1)
-    auxDP.insert(loc=0, column='DateTime', value=pd.date_range(start=iday, freq='H', periods=24))
     
-    diurnalPro_out = diurnalPro_out.append(auxDP,ignore_index=True, sort=False)
-
-
-aux_hourly = County_Emissions_ChemSpec.chemspec_emissions.loc[:,['region_cd','pollutant']+list(AD_SK.fullname.vhc_name)]
-hourly_emissions = County_Emissions_ChemSpec.chemspec_emissions.loc[:,['region_cd','pollutant']]
-for idt in diurnalPro_out.DateTime:
-    auxDT = diurnalPro_out.loc[diurnalPro_out.DateTime == idt, nvhc].reset_index(drop=True)
-    auxEmis = aux_hourly.copy()
-    for icol in auxDT.columns:
-        auxEmis[icol] = aux_hourly[icol] * auxDT[icol].values
-    hourly_emissions.insert(loc=hourly_emissions.shape[1], column=idt, value=auxEmis.loc[:,nvhc].sum(axis=1))
-
-gridded_emissions = pd.DataFrame()
-for ipol in hourly_emissions.pollutant.unique():
-
-    grd_all = pd.merge(roads_RGS.surrogate.loc[:,['grid_id','region_cd','weight_factor']],
-                   hourly_emissions.loc[hourly_emissions.pollutant == ipol], left_on='region_cd', right_on='region_cd', how='left').fillna(0)
+    nvhc = list(np.sort(grd_AD.fullname.vhc_name))
+    auxTP = grd_TempPro.diurnalPro.groupby(['Day','fullname']).mean().reset_index(drop=False)
+    '''
+    Dividing the emissions by 3600 to bring it from grams or mols per hour to
+    grams or mols per second. This is necessary because Air quality models
+    expects gridded emissions in this unit.
+    '''
+    ChemSpec_emis.loc[:,nvhc] = ChemSpec_emis.loc[:,nvhc] / 3600 
     
-    for icol in run_period.DateTime:
-        grd_all.loc[:,icol] = grd_all.loc[:,icol] * grd_all.weight_factor.values
+    diurnalPro_out = pd.DataFrame(columns=['DateTime']+list(np.sort(auxTP.fullname.unique())))
+    for iday in run_period.Day.unique():
+        auxDP = auxTP.loc[auxTP.Day == iday].T
+        auxDP.columns = list(auxDP.loc['fullname'])
+        auxDP = auxDP.drop(index=['Day','fullname']).reset_index(drop=True)
+        auxDP = auxDP.sort_index(axis=1)
+        auxDP.insert(loc=0, column='DateTime', value=pd.date_range(start=iday, freq='H', periods=24))
+        
+        diurnalPro_out = diurnalPro_out.append(auxDP,ignore_index=True, sort=False)
     
-    grd_all.loc[:,'pollutant'] = ipol
-    grd_all = grd_all.groupby(['grid_id','pollutant']).sum().drop(columns=['weight_factor','region_cd']).reset_index(drop=False)
-    grd_all = pd.merge(grd_all,roads_RGS.grid.loc[:,['geometry','grid_id','col','row']], left_on='grid_id', right_on='grid_id', how='left')
-    grd_all = gpd.GeoDataFrame(grd_all, crs=roads_RGS.grid.crs, geometry='geometry')
     
-    grid_id_list = list(grd_all.grid_id.unique())
-    gridded_emissions = gridded_emissions.append(grd_all, ignore_index=True, sort=False)
-
-drop_zero = gridded_emissions.loc[gridded_emissions.pollutant == 0].index
-gridded_emissions = gridded_emissions.drop(index=list(drop_zero)).reset_index(drop=True)
-#releasing memory of gridding dataframe
-grd_all = []
-
-#getting the number of vars and the VAR-LIST
-NVARS = len(gridded_emissions.pollutant.unique())
-VAR_LIST = []
-for kpol in gridded_emissions.pollutant.unique():
-    VAR_LIST.append('{:<16}'.format(kpol))
-s = pd.Series(VAR_LIST)
-VAR_LIST = s.str.cat(sep='')
-
-ntflag = run_period.TFLAG.to_list()
-TFLAG_list = np.zeros((df_times.shape[0], NVARS, 2))
-
-for i in range(0,NVARS):
-    TFLAG_list[:,i,:] = ntflag
-TFLAG_list = TFLAG_list.astype(np.int32)
-
-#getting the FILEDESC
-filedesc = ['{:<80.80}'.format('Vehicle emissions inventory'),
-            '{:<80.80}'.format('/FROM/ CARS - Comprehensive Automobile Emissions Research Simulator'),
-            '{:<160.160}'.format('/VERSION/ CARSv1'),
-            '{:<80.80}'.format('/BASE YEAR/     {}'.format(run_period.DateTime[0].year)),
-            '{:<80.80}'.format('/NUMBER OF FILES/   1'),
-            '{:<80.80}'.format('/FILE POSITION/   1'),
-            '{:<4240.4240}'.format('/NUMBER OF VARIABLES/  {}'.format(NVARS))]
-f = pd.Series(filedesc)
-filedesc = f.str.cat(sep='')
-
-now = dt.datetime.now()
-col = gridded_emissions.col.max()
-row = gridded_emissions.row.max()
-
-# openign the netcdf file
-ncname = (output_dir+'/vehicle_emissions_{0}_n{1}_{2}.nc'.format(run_period.jul_day.iloc[0],run_period.shape[0],case_name))
-
-ncfile = Dataset(ncname, 'w', format='NETCDF3_CLASSIC')
-ncfile.createDimension('TSTEP' , None)
-ncfile.createDimension('DATE-TIME', 2)
-ncfile.createDimension('LAY' , 1)
-ncfile.createDimension('VAR'   , NVARS)
-ncfile.createDimension('ROW'   , row)
-ncfile.createDimension('COL'   , col)
-
-TFLAG_var = ncfile.createVariable('TFLAG' , np.int32 , ('TSTEP', 'VAR', 'DATE-TIME'))
-TFLAG_var.units     = '{:<16.16}'.format("<YYYYDDD,HHMMSS>")
-TFLAG_var.long_name = '{:<16.16}'.format("TFLAG")
-TFLAG_var.var_desc  = '{:<80.80}'.format("Timestep-valid flags:  (1) YYYYDDD or (2) HHMMSS")
-TFLAG_var[:] = TFLAG_list
-
-for ipol in gridded_emissions.pollutant.unique():
-
-    pol_grd = gridded_emissions.loc[gridded_emissions.pollutant == ipol].reset_index(drop=True)
-    pol_grd = pol_grd.drop(columns=['grid_id','pollutant', 'geometry'])
-
-    pol_array = np.zeros((df_times.shape[0], 1, row,col))
+    aux_hourly = ChemSpec_emis.loc[:,['region_cd','species']+list(grd_AD.fullname.vhc_name)]
+    hourly_emissions = ChemSpec_emis.loc[:,['region_cd','species']]
+    for idt in diurnalPro_out.DateTime:
+        auxDT = diurnalPro_out.loc[diurnalPro_out.DateTime == idt, nvhc].reset_index(drop=True)
+        auxEmis = aux_hourly.copy()
+        for icol in auxDT.columns:
+            auxEmis[icol] = aux_hourly[icol] * auxDT[icol].values
+        hourly_emissions.insert(loc=hourly_emissions.shape[1], column=idt, value=auxEmis.loc[:,nvhc].sum(axis=1))
     
-    for idx ,idt in zip(range(0,df_times.shape[0]), df_times):
-        aux_grd = pol_grd.loc[:,idt].to_numpy()
-        aux_grd = aux_grd.reshape((row,col)) #np.flipud(aux_grd.reshape((row,col)))
-        pol_array[idx,0,:,:] = aux_grd
+    gridded_emissions = pd.DataFrame()
+    for ipol in hourly_emissions.species.unique():
     
-    pol_array = pol_array.astype(np.float32)
+        grd_all = pd.merge(roads_RGS.surrogate.loc[:,['grid_id','region_cd','weight_factor']],
+                       hourly_emissions.loc[hourly_emissions.species == ipol], left_on='region_cd', right_on='region_cd', how='left').fillna(0)
+        
+        for icol in run_period.DateTime:
+            grd_all.loc[:,icol] = grd_all.loc[:,icol] * grd_all.weight_factor.values
+        
+        grd_all.loc[:,'species'] = ipol
+        grd_all = grd_all.groupby(['grid_id','species']).sum().drop(columns=['weight_factor','region_cd']).reset_index(drop=False)
+        grd_all = pd.merge(grd_all,roads_RGS.grid.loc[:,['geometry','grid_id','col','row']], left_on='grid_id', right_on='grid_id', how='left')
+        grd_all = gpd.GeoDataFrame(grd_all, crs=roads_RGS.grid.crs, geometry='geometry')
+        
+        grid_id_list = list(grd_all.grid_id.unique())
+        gridded_emissions = gridded_emissions.append(grd_all, ignore_index=True, sort=False)
     
-    nc_var    = ncfile.createVariable(ipol , np.float32 , ('TSTEP','LAY', 'ROW','COL'))
-    nc_var[:] = pol_array
-    if ipol in County_Emissions_ChemSpec.grams_pol.pollutant.to_list():
-        nc_var.long_name = '{:<16.16}'.format('{}'.format(ipol))
-        nc_var.units     = '{:<16.16}'.format('g/s')
-        nc_var.var_desc  = '{:<80.80}'.format('Model species {}'.format(ipol))
+    drop_zero = gridded_emissions.loc[gridded_emissions.species == 0].index
+    gridded_emissions = gridded_emissions.drop(index=list(drop_zero)).reset_index(drop=True)
+    #releasing memory of gridding dataframe
+    grd_all = []
+    
+    if (IOAPI_out == 'Y') or (IOAPI_out == 'y') or (IOAPI_out == 'yes') or (IOAPI_out == 'YES') and \
+       (grid2CMAQ == 'Y') or (grid2CMAQ == 'y') or (grid2CMAQ == 'yes') or (grid2CMAQ == 'YES'):
+        
+        print('')
+        print('******************************************************************')
+        print('*****     Generating chemical speciation IOAPI files         *****')
+        print('******************************************************************')
+        print('')
+ 
+        #getting the number of vars and the VAR-LIST
+        NVARS = len(gridded_emissions.species.unique())
+        VAR_LIST = []
+        for kpol in gridded_emissions.species.unique():
+            VAR_LIST.append('{:<16}'.format(kpol))
+        s = pd.Series(VAR_LIST)
+        VAR_LIST = s.str.cat(sep='')
+        
+        ntflag = run_period.TFLAG.to_list()
+        TFLAG_list = np.zeros((df_times.shape[0], NVARS, 2))
+        
+        for i in range(0,NVARS):
+            TFLAG_list[:,i,:] = ntflag
+        TFLAG_list = TFLAG_list.astype(np.int32)
+        
+        #getting the FILEDESC
+        filedesc = ['{:<80.80}'.format('Vehicle emissions inventory'),
+                    '{:<80.80}'.format('/FROM/ CARS - Comprehensive Automobile Emissions Research Simulator'),
+                    '{:<160.160}'.format('/VERSION/ CARSv1'),
+                    '{:<80.80}'.format('/BASE YEAR/     {}'.format(run_period.DateTime[0].year)),
+                    '{:<80.80}'.format('/NUMBER OF FILES/   1'),
+                    '{:<80.80}'.format('/FILE POSITION/   1'),
+                    '{:<4240.4240}'.format('/NUMBER OF VARIABLES/  {}'.format(NVARS))]
+        f = pd.Series(filedesc)
+        filedesc = f.str.cat(sep='')
+        
+        now = dt.datetime.now()
+        col = gridded_emissions.col.max()
+        row = gridded_emissions.row.max()
+        
+        # openign the netcdf file
+        ncname = (output_dir+'/vehicle_emissions_{0}_n{1}_{2}.nc'.format(run_period.jul_day.iloc[0],run_period.shape[0],case_name))
+        
+        ncfile = Dataset(ncname, 'w', format='NETCDF3_CLASSIC')
+        ncfile.createDimension('TSTEP' , None)
+        ncfile.createDimension('DATE-TIME', 2)
+        ncfile.createDimension('LAY' , 1)
+        ncfile.createDimension('VAR'   , NVARS)
+        ncfile.createDimension('ROW'   , row)
+        ncfile.createDimension('COL'   , col)
+        
+        TFLAG_var = ncfile.createVariable('TFLAG' , np.int32 , ('TSTEP', 'VAR', 'DATE-TIME'))
+        TFLAG_var.units     = '{:<16.16}'.format("<YYYYDDD,HHMMSS>")
+        TFLAG_var.long_name = '{:<16.16}'.format("TFLAG")
+        TFLAG_var.var_desc  = '{:<80.80}'.format("Timestep-valid flags:  (1) YYYYDDD or (2) HHMMSS")
+        TFLAG_var[:] = TFLAG_list
+        
+        for ipol in gridded_emissions.species.unique():
+        
+            pol_grd = gridded_emissions.loc[gridded_emissions.species == ipol].reset_index(drop=True)
+            pol_grd = pol_grd.drop(columns=['grid_id','species', 'geometry'])
+        
+            pol_array = np.zeros((df_times.shape[0], 1, row,col))
+            
+            for idx ,idt in zip(range(0,df_times.shape[0]), df_times):
+                aux_grd = pol_grd.loc[:,idt].to_numpy()
+                aux_grd = aux_grd.reshape((row,col)) #np.flipud(aux_grd.reshape((row,col)))
+                pol_array[idx,0,:,:] = aux_grd
+            
+            pol_array = pol_array.astype(np.float32)
+            
+            nc_var    = ncfile.createVariable(ipol , np.float32 , ('TSTEP','LAY', 'ROW','COL'))
+            nc_var[:] = pol_array
+            if ipol in County_Emissions_ChemSpec.grams_pol.species.to_list():
+                nc_var.long_name = '{:<16.16}'.format('{}'.format(ipol))
+                nc_var.units     = '{:<16.16}'.format('g/s')
+                nc_var.var_desc  = '{:<80.80}'.format('Model species {}'.format(ipol))
+        
+            else:
+                nc_var.long_name = '{:<16.16}'.format('{}'.format(ipol))
+                nc_var.units     = '{:<16.16}'.format('moles/s')
+                nc_var.var_desc  = '{:<80.80}'.format('Model species {}'.format(ipol))
+        
+        
+        ncfile.IOAPI_VERSION = '{:<80.80}'.format("$Id: @(#) ioapi library version 3.0 $") 
+        ncfile.EXEC_ID       = '{:<80.80}'.format("????????????????")
+        ncfile.FTYPE         = 1 
+        ncfile.CDATE         = int('{}{:0>3}'.format(str(now.year),str(now.day))) 
+        ncfile.CTIME         = int('{}{}{}'.format(now.hour,now.minute,now.second)) 
+        ncfile.WDATE         = int('{}{:0>3}'.format(str(now.year),str(now.day))) 
+        ncfile.WTIME         = int('{}{}{}'.format(now.hour,now.minute,now.second)) 
+        ncfile.SDATE         = run_period.jul_day[0] 
+        ncfile.STIME         = run_period.jul_hour[0] 
+        ncfile.TSTEP         = 10000 
+        ncfile.NTHIK         = GRID_info.NTHIK
+        ncfile.NCOLS         = GRID_info.NCOLS
+        ncfile.NROWS         = GRID_info.NROWS
+        ncfile.NLAYS         = GRID_info.NLAYS
+        ncfile.NVARS         = NVARS
+        ncfile.GDTYP         = GRID_info.GDTYP
+        ncfile.P_ALP         = GRID_info.P_ALP
+        ncfile.P_BET         = GRID_info.P_BET
+        ncfile.P_GAM         = GRID_info.P_GAM 
+        ncfile.XCENT         = GRID_info.XCENT 
+        ncfile.YCENT         = GRID_info.YCENT 
+        ncfile.XORIG         = GRID_info.XORIG 
+        ncfile.YORIG         = GRID_info.YORIG 
+        ncfile.XCELL         = GRID_info.XCELL
+        ncfile.YCELL         = GRID_info.YCELL
+        ncfile.VGTYP         = 7  #-1 ?
+        ncfile.VGTOP         = np.float32(0.) #0.f ??
+        ncfile.VGLVLS        = (np.float32(0.), np.float32(0.))
+        ncfile.GDNAM         = "{:<16}".format(GRID_info.GDNAM)
+        ncfile.UPNAM         = "{:<16}".format("OPENSET")
+        ncfile.VAR_LIST      = VAR_LIST
+        ncfile.FILEDESC      = filedesc
+        ncfile.HISTORY       = now.ctime() 
+        ncfile.renameAttribute('VAR_LIST','VAR-LIST')
+        
+        #closing netcdf
+        ncfile.close()
 
-    else:
-        nc_var.long_name = '{:<16.16}'.format('{}'.format(ipol))
-        nc_var.units     = '{:<16.16}'.format('moles/s')
-        nc_var.var_desc  = '{:<80.80}'.format('Model species {}'.format(ipol))
+    return(gridded_emissions)
 
-
-ncfile.IOAPI_VERSION = '{:<80.80}'.format("$Id: @(#) ioapi library version 3.0 $") 
-ncfile.EXEC_ID       = '{:<80.80}'.format("????????????????")
-ncfile.FTYPE         = 1 
-ncfile.CDATE         = int('{}{:0>3}'.format(str(now.year),str(now.day))) 
-ncfile.CTIME         = int('{}{}{}'.format(now.hour,now.minute,now.second)) 
-ncfile.WDATE         = int('{}{:0>3}'.format(str(now.year),str(now.day))) 
-ncfile.WTIME         = int('{}{}{}'.format(now.hour,now.minute,now.second)) 
-ncfile.SDATE         = run_period.jul_day[0] 
-ncfile.STIME         = run_period.jul_hour[0] 
-ncfile.TSTEP         = 10000 
-ncfile.NTHIK         = GRID_info.NTHIK
-ncfile.NCOLS         = GRID_info.NCOLS
-ncfile.NROWS         = GRID_info.NROWS
-ncfile.NLAYS         = GRID_info.NLAYS
-ncfile.NVARS         = NVARS
-ncfile.GDTYP         = GRID_info.GDTYP
-ncfile.P_ALP         = GRID_info.P_ALP
-ncfile.P_BET         = GRID_info.P_BET
-ncfile.P_GAM         = GRID_info.P_GAM 
-ncfile.XCENT         = GRID_info.XCENT 
-ncfile.YCENT         = GRID_info.YCENT 
-ncfile.XORIG         = GRID_info.XORIG 
-ncfile.YORIG         = GRID_info.YORIG 
-ncfile.XCELL         = GRID_info.XCELL
-ncfile.YCELL         = GRID_info.YCELL
-ncfile.VGTYP         = 7  #-1 ?
-ncfile.VGTOP         = np.float32(0.) #0.f ??
-ncfile.VGLVLS        = (np.float32(0.), np.float32(0.))
-ncfile.GDNAM         = "{:<16}".format(GRID_info.GDNAM)
-ncfile.UPNAM         = "{:<16}".format("OPENSET")
-ncfile.VAR_LIST      = VAR_LIST
-ncfile.FILEDESC      = filedesc
-ncfile.HISTORY       = now.ctime() 
-ncfile.renameAttribute('VAR_LIST','VAR-LIST')
-
-#closing netcdf
-ncfile.close()
-
-
-
-
+gridded_emissions = gridded_emis_NC(AD_SK, TempPro, County_Emissions_ChemSpec,
+                      IOAPI_out = 'Y', grid2CMAQ = 'Y')
 
 total_run = ((time.time() - total_start_time))
 print('')  
@@ -2499,25 +2561,34 @@ print('')
 
 
 
-def plot_figures_chart(County_Emissions, AD_SK, gridded_emissions, roads_RGS, 
-                       plot_figures = 'no', plot_24 = 'no', pol_list = [], adj_scale = 0.4):
+
+
+
+def plot_figures_chart(County_Emissions, County_Emissions_ChemSpec, Activity_data_DF, gridded_emissions, roads_RGS, 
+                       plot_figures = 'no', plot_24 = 'no', pol_list = [], species_list = [],
+                       adj_scale = 0.4):
     print('')
     print('******************************************************************')
     print('*****              The Plot option is YES.                   *****')
-    print('***** The total emissions of CO, NOx, PM10, PM2.5, and VOC   ')
+    print('***** The total emissions of CO, NOX, PM10, PM2.5, VOC and SOX ***')
     print('******************************************************************')
     print('')  
     start_time_plot = time.time()
     
     County_Emissions = County_Emissions
-    AD_SK = AD_SK
+    grams_pol = County_Emissions_ChemSpec.grams_pol.species.to_list()
+    moles_pol = County_Emissions_ChemSpec.moles_pol.species.to_list()
+    AD_SK = Activity_data_DF
     gridded_emissions = gridded_emissions
     roads_RGS = roads_RGS
-    
     if len(pol_list) == 0:
-        polls = ['CO','NOx','PM10','PM2.5','VOC']
-    else: 
-        pol_list = pol_list
+        polls   = list(County_Emissions.county_total_WGT.pollutant.unique())
+    else:
+        polls = pol_list
+    if len(species_list) == 0:
+        species = list(gridded_emissions.species.unique())
+    else:
+        species = species_list
     
     if plot_figures == 'yes':
         
@@ -2546,8 +2617,8 @@ def plot_figures_chart(County_Emissions, AD_SK, gridded_emissions, roads_RGS,
             sm._A = []
             cbar = fig.colorbar(sm)
             #    ax.axis('off')
-            name = '{0}_link_emis_SK_Total_emis_Fig_ax_{1}.png'.format(case_name,ipol)
-            fig.savefig(output_dir+'/plots/'+name, bbox_inches = 'tight',dpi=300)
+            name = '{0}_total_link_emissions_{1}.png'.format(case_name,ipol)
+            fig.savefig(output_dir+'/plots/'+name, bbox_inches = 'tight',dpi=200)
             plt.close()
         
         for ipol in polls:
@@ -2563,8 +2634,8 @@ def plot_figures_chart(County_Emissions, AD_SK, gridded_emissions, roads_RGS,
             sm._A = []
             cbar = fig.colorbar(sm)
             #    ax.axis('off')
-            name = '{0}_county_emis_SK_Total_emis_{1}.png'.format(case_name,ipol)
-            fig.savefig(output_dir+'/plots/'+name, bbox_inches = 'tight',dpi=300)
+            name = '{0}_total_county_emissions_{1}.png'.format(case_name,ipol)
+            fig.savefig(output_dir+'/plots/'+name, bbox_inches = 'tight',dpi=200)
             plt.close()
     
         #Piechart Plots
@@ -2586,12 +2657,12 @@ def plot_figures_chart(County_Emissions, AD_SK, gridded_emissions, roads_RGS,
             ax.set_title('Total Emissions by Fuel - {0}'.format(ipol), fontsize = 22)
     
             name = 'Pie_Chart_Emissions_by_Fuel_{0}.png'.format(ipol)
-            fig.savefig(output_dir+'/plots/'+name, bbox_inches = 'tight',dpi=300)
+            fig.savefig(output_dir+'/plots/'+name, bbox_inches = 'tight',dpi=200)
             plt.close()
         
         #Gridded emissions Plots
-        for ipol in polls:
-            plot_pol = gridded_emissions[gridded_emissions.pollutant == ipol]
+        for ipol in species:
+            plot_pol = gridded_emissions[gridded_emissions.species == ipol].reset_index(drop=True)
             plot_pol['total_emis'] = plot_pol.loc[:,run_period.DateTime.loc[0:24]].sum(axis=1)
             vmin = 0
             vmax = adj_scale * plot_pol['total_emis'].max()
@@ -2606,22 +2677,20 @@ def plot_figures_chart(County_Emissions, AD_SK, gridded_emissions, roads_RGS,
                                                           vmax=vmax))
             sm._A = []
             cbar = fig.colorbar(sm)
-            particles = ['PAL','PCA','PCL','PEC','PFE','PH2O','PK',
-                         'PMC','PMG','PMN','PMOTHR','PNA','PNCOM',
-                         'PNH4','PNO3','POC','PSI','PSO4','PTI']
+            particles = grams_pol
             if ipol in particles:
                 cbar.ax.set_ylabel(r'$grams{\cdot}day^{-1}$', fontsize=14)
             else:
                 cbar.ax.set_ylabel(r'$mols{\cdot}day^{-1}$', fontsize=14)
     
-            name = '{0}_Grid_Total_emis_{1}.png'.format(case_name,ipol)
+            name = '{0}_total_grid_emissions_{1}.png'.format(case_name,ipol)
             fig.savefig(output_dir+'/plots/'+name, bbox_inches = 'tight',dpi=200)
             plt.close()
     
     #Hourly gridded emissions Plots
     if plot_24 == 'yes':
-        for ipol in polls:
-            plot_pol = gridded_emissions[gridded_emissions.pollutant == ipol]
+        for ipol in species:
+            plot_pol = gridded_emissions[gridded_emissions.species == ipol]
             vmin = 0
             vmax = adj_scale * plot_pol.loc[:,run_period.DateTime.loc[0:24]].max().max()
             for itime in run_period.DateTime.loc[0:24]:
@@ -2637,19 +2706,18 @@ def plot_figures_chart(County_Emissions, AD_SK, gridded_emissions, roads_RGS,
                 ax.text(xpos, ypos, '{0}:00H'.format(itime.hour), color='red', bbox=dict(facecolor='white', alpha=1))
                 sm._A = []
                 cbar = fig.colorbar(sm)
-                particles = ['PAL','PCA','PCL','PEC','PFE','PH2O','PK',
-                             'PMC','PMG','PMN','PMOTHR','PNA','PNCOM',
-                             'PNH4','PNO3','POC','PSI','PSO4','PTI']
+                particles = grams_pol
+                
                 if ipol in particles:
-                    cbar.ax.set_ylabel(r'$grams{\cdot}day^{-1}$', fontsize=14)
+                    cbar.ax.set_ylabel(r'$grams{\cdot}s^{-1}$', fontsize=14)
                 else:
-                    cbar.ax.set_ylabel(r'$mols{\cdot}day^{-1}$', fontsize=14)
+                    cbar.ax.set_ylabel(r'$mols{\cdot}s^{-1}$', fontsize=14)
 
                 if itime.hour < 10:
-                    name = 'Hourly_{0}_Grid_emis_SK_Total_emis_{1}_hour_0{2}.png'.format(case_name,ipol,itime.hour)
+                    name = '{0}_hourly_grid_emissions_{1}_hour_0{2}.png'.format(case_name,ipol,itime.hour)
                 else:
-                    name = 'Hourly_{0}_Grid_emis_SK_Total_emis_{1}_hour_{2}.png'.format(case_name,ipol,itime.hour)
-                fig.savefig(output_dir+'/plots/'+name, bbox_inches = 'tight',dpi=150)
+                    name = '{0}_hourly_grid_emissions_{1}_hour_{2}.png'.format(case_name,ipol,itime.hour)
+                fig.savefig(output_dir+'/plots/'+name, bbox_inches = 'tight',dpi=200)
                 plt.close()
         
     total_plot = ((time.time() - start_time_plot))
@@ -2665,8 +2733,8 @@ def plot_figures_chart(County_Emissions, AD_SK, gridded_emissions, roads_RGS,
 
     return 
 
-plot_figures_chart(County_Emissions, AD_SK, gridded_emissions, roads_RGS, 
-                       plot_figures = plot_figures, plot_24 = plot_24, pol_list = [])
+plot_figures_chart(County_Emissions, County_Emissions_ChemSpec, AD_SK, gridded_emissions, roads_RGS, 
+                       plot_figures = plot_figures, plot_24 = plot_24, pol_list = [], species_list = ['NO2', 'POC', 'PEC', 'NH3','OLE','ISOP'])
 
 
 
