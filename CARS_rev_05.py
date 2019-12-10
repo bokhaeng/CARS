@@ -66,6 +66,28 @@ link_shape_att         = ['link_id'  , 'EMD_CD' , 'EMD_ENG_NM', 'EMD_KOR_NM',
 county_shape           = '/shapes/TL_SCCO_EMD.shp'
 county_shape_att       = ['EMD_CD', 'EMD_ENG_NM', 'EMD_KOR_NM']
 
+
+'''
+'*****      Temporal profiles names      *****'
+'''
+
+temporal_profile_folder = input_dir+'/temporal_profile'
+temporal_monthly_file  = 'monthly_profile.csv'
+temporal_week_file     = 'week_profile.csv'
+temporal_weekday_file  = 'weekday_profile.csv'
+temporal_weekend_file  = 'weekend_profile.csv'
+temporal_CrossRef      = 'temporal_profile_CrossRef.csv'
+
+
+'''
+'*****      Chemical speciation for PM2.5, VOC and NOx      *****'
+'''
+chemical_profile_folder = input_dir+'/chemical_speciation'
+chemical_profile  = 'gspro_cmaq_cb6_2014fa_nata_cb6cmaq_14j_criteria.txt'
+speciation_CrossRef   = 'chem_profile_CrossRef.csv'
+
+
+
 '''
 Do you want to apply Deterioration factor into emissions factors?
 If YES, set Deterioration_CALC     = 'yes' and insert the deterioration
@@ -82,7 +104,7 @@ If YES, set Control_CALC     = 'yes' and insert the control
 list file. Remember that vehciles names should match with emissions factor
 and Activity data
 '''
-Control_CALC     = 'no' #'yes'
+Control_CALC     = 'yes' #'yes'
 Control_list     = ['control_factors.csv']
 
 
@@ -107,7 +129,7 @@ To use it, set the adj_scale to the value you want (e.g. 0.5) The default value 
 
 *** WARNING ***: The plotting takes a bit longer to finish especially the 24 hours plot
 '''
-plot_figures = 'yes'   #'yes' or 'no'
+plot_figures = 'no'   #'yes' or 'no'
 plot_24      = 'no'        #'yes' or 'no' #24 hours animated plot
 adj_scale    = 0.4 
 
@@ -139,26 +161,6 @@ can take couple minutes.
 outGridShape = 'no'
 
 
-'''
-'*****      Temporal profiles names      *****'
-'''
-
-temporal_profile_folder = input_dir+'/temporal_profile'
-temporal_monthly_file  = 'monthly_profile.csv'
-temporal_week_file     = 'week_profile.csv'
-temporal_weekday_file  = 'weekday_profile.csv'
-temporal_weekend_file  = 'weekend_profile.csv'
-temporal_CrossRef      = 'temporal_profile_CrossRef.csv'
-
-
-'''
-'*****      Chemical speciation for PM2.5, VOC and NOx      *****'
-'''
-chemical_profile_folder = input_dir+'/chemical_speciation'
-pm25_speciation_file  = 'chem_profile_PM2.5.csv'
-voc_speciation_file   = 'chem_profile_VOC.csv'
-nox_speciation_file   = 'chem_profile_NOx.csv'
-speciation_CrossRef   = 'chem_profile_CrossRef.csv'
 
 '''
 ----------------------------------------------------------------------------------------
@@ -265,11 +267,9 @@ class Temporal_table:
         self.diurnalPro = Diurnal_profile
 
 class Chemical_Speciation_table:
-    def __init__(self, pm25_speciation, voc_speciation, nox_speciation, speciation_CrossRef):
-        self.PM2_5_spec = pm25_speciation
-        self.VOC_spec   = voc_speciation
-        self.NOx_spec   = nox_speciation
-        self.crossref   = speciation_CrossRef
+    def __init__(self, chemical_profile, speciation_CrossRef):
+        self.chempro  = chemical_profile
+        self.crossref = speciation_CrossRef
 
 class GRID_info_table:
     def __init__(self, NTHIK, NCOLS, NROWS, NLAYS, GDTYP, P_ALP, P_BET, P_GAM,
