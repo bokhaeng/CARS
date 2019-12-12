@@ -105,7 +105,7 @@ list file. Remember that vehciles names should match with emissions factor
 and Activity data
 '''
 Control_CALC     = 'yes' #'yes'
-Control_list     = ['control_factors.csv']
+Control_list     = ['control_factors_emergency_sma.csv']#['control_factors.csv']
 
 
 ''' IT IS NOT IMPLEMENTED
@@ -956,7 +956,9 @@ def roads_grid_surrogate_inf(input_dir, File_Name, Link_Shape_att, GridDesc_file
                                      'link_split_total','link_split_county',
                                      'vkt_split_county', 'weight_factor']]
         
-        surrogate = pd.merge(grid, surrogate, how='left', on=['grid_id']).fillna(0)
+        surrogate = pd.merge(grid, surrogate, how='left', on=['grid_id'])
+        surrogate.loc[:,~surrogate.columns.str.contains('geometry')] = \
+            surrogate.loc[:,~surrogate.columns.str.contains('geometry')].fillna(0)
         out_roads = out_roads.drop(columns=['geometry'])
         out_roads = out_roads.rename(columns={'geometry_BKP': 'geometry'}).set_geometry('geometry')
         out_roads['region_cd'] = out_roads['region_cd'].astype(int)
@@ -1984,9 +1986,9 @@ County_Emissions = calc_County_Emissions(input_dir, EmisFactor_yr_spd,
 
 def aplly_control(Control_list_file, County_Emissions_df, County_SHP_df):
     start_time = time.time()
-    control_list = Control_list      #Control_list_file    #
-    cnt_df       = County_Emissions  #County_Emissions_df  #
-    county_df    = county_SHP        #County_SHP_df        #
+    control_list = Control_list_file    #Control_list      #
+    cnt_df       = County_Emissions_df  #County_Emissions  #
+    county_df    = County_SHP_df        #county_SHP        #
     ADvhc        = cnt_df.fullname.fullname.to_list()
     for ifile in range(0,len(Control_list)):
 #        print(ef_list[ifile])
@@ -2061,63 +2063,75 @@ def aplly_control(Control_list_file, County_Emissions_df, County_SHP_df):
     cnt_vhc = []
     
     control_df.loc[:,'region_cd']      = control_df.loc[:,'region_cd'].astype(int)
-    for irgn in control_df.region_cd.unique():
-        aux_irg = control_df.loc[(control_df.region_cd == irgn)]
-        appd_CF = pd.DataFrame()
-        for ipol in aux_irg.data.unique():
-            aux_CF = aux_irg.loc[(aux_irg.data == ipol)]
-            aux_CF = aux_CF.pivot(index='year', columns='fullname', values='control_factor').fillna(1).reset_index(drop=False)
-            aux_CF['data']      = ipol
-            aux_CF['region_cd'] = irgn
-            aux_CF = aux_CF.rename(columns={'region_cd' : 'region_general'})
-            appd_CF = appd_CF.append(aux_CF, ignore_index=True, sort=False)
-        if (len(str(irgn)) == 2) or (len(str(irgn)) == 1):
-            apply_factor_sta = pd.merge(apply_factor_sta, appd_CF, 
-                                        left_on=['region_state','pollutant', 'manufacture_date'],
-                                        right_on=['region_general','data','year'],
-                                        how='left').fillna(1.0)
-            apply_factor_sta = apply_factor_sta.drop(columns=['region_general','data','year'])
-            sta_vhc.extend(list(aux_irg.fullname.unique()))
-        elif (len(str(irgn)) == 8) or (len(str(irgn)) == 7):
-            apply_factor_cnt = pd.merge(apply_factor_cnt, appd_CF, 
-                                        left_on=['region_cd','pollutant', 'manufacture_date'],
-                                        right_on=['region_general','data','year'],how='left').fillna(1.0)
-            apply_factor_cnt = apply_factor_cnt.drop(columns=['region_general','data','year'])
-            cnt_vhc.extend(list(aux_irg.fullname.unique()))
-        else:
-            print('*****ERROR: Control factor is only applied in State level (2 digits state code e.g: 11) or')
-            print('county level (8 digitis county code e.g: 11110129)')
-            sys.exit()
+    if len(control_df.region_cd.unique()) > 0:
+        for irgn in control_df.region_cd.unique():
+            aux_irg = control_df.loc[(control_df.region_cd == irgn)]
+            appd_CF = pd.DataFrame()
+            for ipol in aux_irg.data.unique():
+                aux_CF = aux_irg.loc[(aux_irg.data == ipol)]
+                aux_CF = aux_CF.pivot(index='year', columns='fullname', values='control_factor').fillna(1).reset_index(drop=False)
+                aux_CF['data']      = ipol
+                aux_CF['region_cd'] = irgn
+                aux_CF = aux_CF.rename(columns={'region_cd' : 'region_general'})
+                appd_CF = appd_CF.append(aux_CF, ignore_index=True, sort=False)
+            if (len(str(irgn)) == 2) or (len(str(irgn)) == 1):
+                apply_factor_sta = pd.merge(apply_factor_sta, appd_CF, 
+                                            left_on=['region_state','pollutant', 'manufacture_date'],
+                                            right_on=['region_general','data','year'],
+                                            how='left').fillna(1.0)
+                apply_factor_sta = apply_factor_sta.drop(columns=['region_general','data','year'])
+                sta_vhc.extend(list(aux_irg.fullname.unique()))
+            elif (len(str(irgn)) == 8) or (len(str(irgn)) == 7):
+                apply_factor_cnt = pd.merge(apply_factor_cnt, appd_CF, 
+                                            left_on=['region_cd','pollutant', 'manufacture_date'],
+                                            right_on=['region_general','data','year'],how='left').fillna(1.0)
+                apply_factor_cnt = apply_factor_cnt.drop(columns=['region_general','data','year'])
+                cnt_vhc.extend(list(aux_irg.fullname.unique()))
+            else:
+                print('*****ERROR: Control factor is only applied in State level (2 digits state code e.g: 11) or')
+                print('county level (8 digitis county code e.g: 11110129)')
+                sys.exit()
+    else:
+        print('')
+        print('*** INFORMATION: There is no control factor for county level')
+        print('')
+    
+    if len(control_df_all.region_cd.unique()) > 0:
+        for irgn in control_df_all.region_cd.unique():
+            if (len(str(irgn)) == 2) or (len(str(irgn)) == 1):
+                aux_all_cf = control_df_all.loc[control_df_all.region_cd == irgn]
+                sta_vhc.extend(list(aux_all_cf.fullname.unique()))
+                aux_all_cf = aux_all_cf.pivot(index='year', columns='fullname', values='control_factor').fillna(1).reset_index(drop=False)
+                aux_all_cf['region_cd'] = irgn
+                aux_all_cf = aux_all_cf.rename(columns={'region_cd' : 'region_general'})
+                apply_factor_sta = pd.merge(apply_factor_sta,aux_all_cf, 
+                                            left_on  =['region_state', 'manufacture_date'],
+                                            right_on =['region_general', 'year'], how='left').fillna(1.0)
+                apply_factor_sta = apply_factor_sta.drop(columns=['region_general','year'])
+                
+            elif (len(str(irgn)) == 8) or (len(str(irgn)) == 7):
+                aux_all_cf = control_df_all.loc[control_df_all.region_cd == irgn]
+                cnt_vhc.extend(list(aux_all_cf.fullname.unique()))
+                aux_all_cf = aux_all_cf.pivot(index='year', columns='fullname', values='control_factor').fillna(1).reset_index(drop=False)
+                aux_all_cf['region_cd'] = irgn
+                aux_all_cf = aux_all_cf.rename(columns={'region_cd' : 'region_general'})
+    
+                apply_factor_cnt = pd.merge(apply_factor_cnt,aux_all_cf, 
+                                            left_on  =['region_cd', 'manufacture_date'],
+                                            right_on =['region_general', 'year'], how='left').fillna(1.0)
+    
+                apply_factor_cnt = apply_factor_cnt.drop(columns=['region_general','year'])
+                
+            else:
+                print('*****ERROR: Control factor is only applied in State level (2 digits state code e.g: 11) or')
+                print('county level (8 digitis county code e.g: 11110129)')
+                sys.exit()
+    else:
+        print('')
+        print('*** INFORMATION: There is no control factor for statte level')
+        print('')
 
-    for irgn in control_df_all.region_cd.unique():
-        if (len(str(irgn)) == 2) or (len(str(irgn)) == 1):
-            aux_all_cf = control_df_all.loc[control_df_all.region_cd == irgn]
-            sta_vhc.extend(list(aux_all_cf.fullname.unique()))
-            aux_all_cf = aux_all_cf.pivot(index='year', columns='fullname', values='control_factor').fillna(1).reset_index(drop=False)
-            aux_all_cf['region_cd'] = irgn
-            aux_all_cf = aux_all_cf.rename(columns={'region_cd' : 'region_general'})
-            apply_factor_sta = pd.merge(apply_factor_sta,aux_all_cf, 
-                                        left_on  =['region_state', 'manufacture_date'],
-                                        right_on =['region_general', 'year'], how='left').fillna(1.0)
-            apply_factor_sta = apply_factor_sta.drop(columns=['region_general','data','year'])
-            
-        elif (len(str(irgn)) == 8) or (len(str(irgn)) == 7):
-            aux_all_cf = control_df_all.loc[control_df_all.region_cd == irgn]
-            cnt_vhc.extend(list(aux_all_cf.fullname.unique()))
-            aux_all_cf = aux_all_cf.pivot(index='year', columns='fullname', values='control_factor').fillna(1).reset_index(drop=False)
-            aux_all_cf['region_cd'] = irgn
-            aux_all_cf = aux_all_cf.rename(columns={'region_cd' : 'region_general'})
 
-            apply_factor_cnt = pd.merge(apply_factor_cnt,aux_all_cf, 
-                                        left_on  =['region_cd', 'manufacture_date'],
-                                        right_on =['region_general', 'year'], how='left').fillna(1.0)
-
-            apply_factor_cnt = apply_factor_cnt.drop(columns=['region_general','year'])
-            
-        else:
-            print('*****ERROR: Control factor is only applied in State level (2 digits state code e.g: 11) or')
-            print('county level (8 digitis county code e.g: 11110129)')
-            sys.exit()
 
     apply_factor_sta = apply_factor_sta.fillna(1.0)
     apply_factor_cnt = apply_factor_cnt.fillna(1.0)
