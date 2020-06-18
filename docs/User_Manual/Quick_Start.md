@@ -1,36 +1,33 @@
-# CARS (Comprehensive Automobile Emissions Research Simulator)
-Comprehensive Automobile Research System (CARS) is an open-source and python-based mobile emission inventory model designed to efficiently provide high-resolution and high-quality mobile emission data for the air quality forecast system. 
+# CARS Quick Start
 
-The CARS is licensed as open-source python software that was developed with the funding from South Korea. The CARS has five independent modules to produce the emission data for the chemical transport model (CTM), including the arrangement of vehicle activity data, calculating the emission factors for each vehicle type, operating the link-level road shapefile, and outputting the emission data. 
+## Set up the python environment for CARS:
+# Install python 3
 
-[Quick Start Guide](https://pages.github.com/): Abbreviated description of how to start up and runnung the CARS.
+1. Download and install python 3 from [Anaconda](https://www.anaconda.com/products/individual)
 
-[Chapter 1](https://pages.github.com/): CARS develop background, goals, and terminology
+# Install the third-party packages:
+The third-party packages can be installed by GUI (Anaconda-Navigator), or manual install in the terminal of python environment.
 
-[Chapter 2](https://pages.github.com/): Intructions on the obtain and install the CARS
+1. Install pandas:
+```
+conda install pandas
+```
+2. Install geopandas (must be v0.6.1):
+```
+conda install geopandas=0.6.1
+```
+3. Install numpy:
+```
+conda install numpy
+```
+4. Install matplotlib:
+```
+conda install matplotlib
+```
+5. Install netCDF:
+```
+conda install netCDF
+```
 
-[Chapter 3](https://pages.github.com/): Activity data
 
-[Chapter 4](https://pages.github.com/): Emission factors calculation
-
-[Chapter 5](https://pages.github.com/): Vehicle speed and average speed distribution
-
-[Chapter 6](https://pages.github.com/): Road VKT and shapefile processes
-
-[Chapter 6](https://pages.github.com/): Emission Rate calculation
-
-[Chapter 7](https://pages.github.com/): CARS output
-
-[Chapter 8](https://pages.github.com/): Plot output
-
-[Chapter 9](https://pages.github.com/): Third=party libraries and software
-
-[Chapter 10](https://pages.github.com/): CARS release license
-
-
-## Getting the test data for CARS
-Download data to test the CARS model from http://www.cmascenter.org
-
-## Documentation
-[CARS User's Guide](https://github.com/CMASCenter/CARS/tree/master/docs/User_Manual).
 
