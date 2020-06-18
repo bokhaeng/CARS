@@ -32,7 +32,7 @@ conda install matplotlib
 conda install netCDF4
 ```
 
-### Run CARS model:
+## Setup the parameter in CARS model:
 
 1. Open and edit the file CARS_rev_07.py by text app or vim.
 2. Setup the model variables and directory in CARS python script:
@@ -56,7 +56,7 @@ RUNLEN =  744            # run length  # oneday is 24
 If the test case is downloaded and the home_dir has been edited to right directory, the CARS python script can be processed for the test case. 
 
 
-### Run CARS model:
+## Run CARS model:
 ```
 python CARS_rev_07.py
 ```
