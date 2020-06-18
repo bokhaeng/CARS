@@ -32,7 +32,30 @@ conda install netCDF4
 ```
 
 # Run CARS model:
+
+1. Open and edit the file CARS_rev_07.py by text app or vim.
+2. Setup the model variables and directory in CARS python script:
+```
+case_name = 'YOUR_CASE_NAME'
+home_dir   = r'YOUR_CARS_HOME_FOLDER_DIRECTORY'
+src_dir    = home_dir+'/src'
+input_dir  = home_dir+'/input_country'
+inter_dir  = home_dir+'/intermediate'#+case_name# for different input location
+output_dir = home_dir+'/output_'+case_name
+met_dir    = input_dir+'/metdata'
+```
+3. Setup the model process duration of output
+```
+STDATE = '2017-01-01'  # start date
+ENDATE = '2017-01-31'  # end date
+STTIME =  00            # start time 
+RUNLEN =  744            # run length  # oneday is 24
+```
+
+If the test case is downloaded and the home_dir has been edited to right directory, the CARS python script can be processed for the test case. 
+
+
+# Run CARS model:
 ```
 python CARS_rev_07.py
 ```
-
