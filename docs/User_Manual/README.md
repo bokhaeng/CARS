@@ -11,23 +11,23 @@ The CARS is licensed as open-source python software that was developed with the 
 
 [Chapter 3](https://pages.github.com/): Activity data
 
-[Chapter 4](https://pages.github.com/): Emission calculation
+[Chapter 4](https://pages.github.com/): Emission Factors calculation
 
 [Chapter 5](https://pages.github.com/): Vehicle speed and average speed distribution
 
-[Chapter 6](https://pages.github.com/): CARS output
+[Chapter 6](https://pages.github.com/): Road VKT and shapefile processes
 
-[Chapter 7](https://pages.github.com/): Plot output
+[Chapter 6](https://pages.github.com/): Emission Rate calculation
 
-[Chapter 8](https://pages.github.com/): Third=party libraries and software
+[Chapter 7](https://pages.github.com/): CARS output
 
-[Chapter 9](License): CARS release license
+[Chapter 8](https://pages.github.com/): Plot output
+
+[Chapter 9](https://pages.github.com/): Third=party libraries and software
+
+[Chapter 10](License): CARS release license
 
 
-
-```
-git clone https://github.com/CMASCenter/CARS.git
-```
 ## Getting the test data for CARS
 Download data to test the CARS model from http://www.cmascenter.org
 
