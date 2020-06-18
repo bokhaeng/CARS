@@ -8,6 +8,6 @@ git clone https://github.com/CMASCenter/CARS.git
 ## Getting the test data for CARS
 Download data to test the CARS model from http://www.cmascenter.org
 
-## Docimentation
+## Documentation
 [CARS User's Guide](https://pages.github.com/).
 
