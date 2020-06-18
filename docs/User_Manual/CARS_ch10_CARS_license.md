@@ -21,9 +21,9 @@ The CARS is licensed as open-source python software that was developed with the 
 
 [Chapter 7](https://pages.github.com/): CARS output
 
-[Chapter 8](https://pages.github.com/): Figure output
+[Chapter 8](https://pages.github.com/): Plot output
 
-[Chapter 9](https://pages.github.com/): Third-party libraries and software
+[Chapter 9](https://pages.github.com/): Third=party libraries and software
 
 [Chapter 10](https://pages.github.com/): CARS release license
 
