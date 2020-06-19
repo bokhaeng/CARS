@@ -1,31 +1,8 @@
-# CARS (Comprehensive Automobile Emissions Research Simulator)
-Comprehensive Automobile Research System (CARS) is an open-source and python-based mobile emission inventory model designed to efficiently provide high-resolution and high-quality mobile emission data for the air quality forecast system. 
+# Introduction of CARS (Comprehensive Automobile Emissions Research Simulator)
 
-The CARS is licensed as open-source python software that was developed with the funding from South Korea. The CARS has five independent modules to produce the emission data for the chemical transport model (CTM), including the arrangement of vehicle activity data, calculating the emission factors for each vehicle type, operating the link-level road shapefile, and outputting the emission data. 
+Konkuk University and the University of North Carolina at Chapel Hill (UNC-CH) have been working closely to develop the bottom-up emission inventory for on-road and non-road mobile sources using their local emissions factors by vehicle, by fuel, by vehicle operating speed, and by ambient temperature (limited only to diesel hot engine exhaust emissions). While Konkuk University is responsible for collecting the latest of Korea’s official emissions factors and developing the local mobile source-related activity data, such as vehicle-specific total Vehicle Kilometer Travelled (VKT), vehicle ages, fuel type, and so on, UNC-CH is responsible for developing the new Korea on-road/non-road mobile emissions model called Comprehensive Automobile Research Modeling System (CARS) as a part of Korea Air Quality Modeling System (KAQMS) development to enhance the quality and accuracy of model prediction by providing a better quality emissions from mobile sources.
 
-[Quick Start Guide](https://pages.github.com/): Abbreviated description of how to start up and runnung the CARS.
-
-[Chapter 1](https://pages.github.com/): CARS develop background, goals, and terminology
-
-[Chapter 2](https://pages.github.com/): Intructions on the obtain and install the CARS
-
-[Chapter 3](https://pages.github.com/): Activity data
-
-[Chapter 4](https://pages.github.com/): Emission factors calculation
-
-[Chapter 5](https://pages.github.com/): Vehicle speed and average speed distribution
-
-[Chapter 6](https://pages.github.com/): Road VKT and shapefile processes
-
-[Chapter 6](https://pages.github.com/): Emission Rate calculation
-
-[Chapter 7](https://pages.github.com/): CARS output
-
-[Chapter 8](https://pages.github.com/): Plot output
-
-[Chapter 9](https://pages.github.com/): Third=party libraries and software
-
-[Chapter 10](https://pages.github.com/): CARS release license
+The CARS model has been developed on python 3 platform. Therefore, it applied the third-party python modules to process and prepare the output. 
 
 
 ## Getting the test data for CARS
