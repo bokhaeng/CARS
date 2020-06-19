@@ -5,9 +5,9 @@ The CARS is licensed as open-source python software that was developed with the 
 
 [Quick Start Guide](https://github.com/CMASCenter/CARS/blob/master/docs/User_Manual/Quick_Start.md): Abbreviated description of how to start up and runnung the CARS.
 
-[Chapter 1](https://github.com/CMASCenter/CARS/blob/master/docs/User_Manual/CARS_ch1_background.md): CARS develop background, goals, and terminology
+[Chapter 1](https://github.com/CMASCenter/CARS/blob/master/docs/User_Manual/CARS_ch1_introduction.md): CARS develop background, goals, and terminology
 
-[Chapter 2](https://github.com/CMASCenter/CARS/blob/master/docs/User_Manual/CARS_ch3_activity_data.md): Intructions on the obtain and install the CARS
+[Chapter 2](https://github.com/CMASCenter/CARS/blob/master/docs/User_Manual/CARS_ch2_installation.md): Install the CARS
 
 [Chapter 3](https://github.com/CMASCenter/CARS/blob/master/docs/User_Manual/CARS_ch3_activity_data.md): Activity data
 
