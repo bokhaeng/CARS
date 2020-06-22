@@ -7,4 +7,4 @@ The CARS model has been developed on python 3 platform. Therefore, it applied th
 
 ## CARS model scheme
 
-https://github.com/CMASCenter/CARS/blob/master/docs/User_Manual/media/Picture1.png
+![CARS scheme](https://github.com/CMASCenter/CARS/blob/master/docs/User_Manual/media/Picture1.png)
