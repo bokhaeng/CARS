@@ -3,7 +3,7 @@ Activity data is one of the mandatory required input data to run CARS, and the f
 
 
 | Column | Name | Type | Description|
-| :-------- |:------------------:| -----------:|---------------------------------------:|
+| :-------- |:------------------:| :-----------|:---------------------------------------|
 | 1 | fuel             | character | Fuel type Name (e.g. gasoline, diesel) |
 | 2 | vehicle          | character | Vehicle type Name (e.g. sedan, truck)  |
 | 3 | engien           | character | Engine type Name (e.g compact, full)   |
