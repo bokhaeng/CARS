@@ -1,36 +1,52 @@
-# CARS (Comprehensive Automobile Emissions Research Simulator)
-Comprehensive Automobile Research System (CARS) is an open-source and python-based mobile emission inventory model designed to efficiently provide high-resolution and high-quality mobile emission data for the air quality forecast system. 
+## Install python 3
 
-The CARS is licensed as open-source python software that was developed with the funding from South Korea. The CARS has five independent modules to produce the emission data for the chemical transport model (CTM), including the arrangement of vehicle activity data, calculating the emission factors for each vehicle type, operating the link-level road shapefile, and outputting the emission data. 
+1. Download and install python 3 from [Anaconda](https://www.anaconda.com/products/individual)
 
-[Quick Start Guide](https://pages.github.com/): Abbreviated description of how to start up and runnung the CARS.
+### Install the third-party packages:
+The third-party packages can be installed by GUI (Anaconda-Navigator), or manual install in the terminal with python 3 environment. The geopandas must be verion 0.6.1.
 
-[Chapter 1](https://pages.github.com/): CARS develop background, goals, and terminology
+Here are the steps to install packages manually in terminal (not python console):
 
-[Chapter 2](https://pages.github.com/): Intructions on the obtain and install the CARS
+1. Install geopandas:
+```
+conda install geopandas=0.6.1
+```
+2. Install pandas:
+```
+conda install pandas
+```
+3. Install numpy:
+```
+conda install numpy
+```
+4. Install matplotlib:
+```
+conda install matplotlib
+```
+5. Install netCDF:
+```
+conda install netCDF4
+```
 
-[Chapter 3](https://pages.github.com/): Activity data
+## Setup the parameter in CARS model:
 
-[Chapter 4](https://pages.github.com/): Emission factors calculation
+1. Open and edit the file CARS_rev_07.py by text app or vim.
+2. Setup the model variables and directory in CARS python script (line 22 to 37):
+```
+case_name = 'YOUR_CASE_NAME'
+home_dir   = r'YOUR_CARS_HOME_DIRECTORY'
+src_dir    = home_dir+'/src'
+input_dir  = home_dir+'/input_country'
+inter_dir  = home_dir+'/intermediate'#+case_name# for different input location
+output_dir = home_dir+'/output_'+case_name
+met_dir    = input_dir+'/metdata'
+```
+3. Setup the model process duration of output
+```
+STDATE = '2017-01-01'  # start date
+ENDATE = '2017-01-31'  # end date
+STTIME =  00            # start time 
+RUNLEN =  744            # run length  # oneday is 24
+```
 
-[Chapter 5](https://pages.github.com/): Vehicle speed and average speed distribution
-
-[Chapter 6](https://pages.github.com/): Road VKT and shapefile processes
-
-[Chapter 6](https://pages.github.com/): Emission Rate calculation
-
-[Chapter 7](https://pages.github.com/): CARS output
-
-[Chapter 8](https://pages.github.com/): Plot output
-
-[Chapter 9](https://pages.github.com/): Third=party libraries and software
-
-[Chapter 10](https://pages.github.com/): CARS release license
-
-
-## Getting the test data for CARS
-Download data to test the CARS model from http://www.cmascenter.org
-
-## Documentation
-[CARS User's Guide](https://github.com/CMASCenter/CARS/tree/master/docs/User_Manual).
-
+If the test case is downloaded and the home_dir has been edited to right directory, the CARS python script can be processed for the test case. Other detail setup for each module will be explained in other chaper. 

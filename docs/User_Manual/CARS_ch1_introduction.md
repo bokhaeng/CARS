@@ -5,9 +5,6 @@ Konkuk University and the University of North Carolina at Chapel Hill (UNC-CH) h
 The CARS model has been developed on python 3 platform. Therefore, it applied the third-party python modules to process and prepare the output. 
 
 
-## Getting the test data for CARS
-Download data to test the CARS model from http://www.cmascenter.org
+## CARS model scheme
 
-## Documentation
-[CARS User's Guide](https://github.com/CMASCenter/CARS/tree/master/docs/User_Manual).
-
+https://github.com/CMASCenter/CARS/blob/master/docs/User_Manual/media/Picture1.png
