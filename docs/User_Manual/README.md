@@ -9,7 +9,7 @@ The CARS is licensed as open-source python software that was developed with the 
 
 [Chapter 2](https://github.com/CMASCenter/CARS/blob/master/docs/User_Manual/CARS_ch2_installation.md): Install the CARS
 
-[Chapter 3](https://github.com/CMASCenter/CARS/blob/master/docs/User_Manual/CARS_ch6_emission_rate_caculation.md): Emission Rate calculation
+[Chapter 3](https://github.com/CMASCenter/CARS/blob/master/docs/User_Manual/CARS_ch3_emission_rate_caculation.md): Emission Rate calculation
 
 [Chapter 4](https://github.com/CMASCenter/CARS/blob/master/docs/User_Manual/CARS_ch4_activity_data.md): Activity data
 
