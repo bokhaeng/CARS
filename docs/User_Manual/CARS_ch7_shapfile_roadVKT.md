@@ -1,4 +1,4 @@
-# The shapefile format
+# The shapefile format for CARS input
 
 ## The requirement parameters in the road link shapefile.
 | Column | Name | Type | Description|

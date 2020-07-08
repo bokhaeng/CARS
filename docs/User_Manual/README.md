@@ -9,9 +9,9 @@ The CARS is licensed as open-source python software that was developed with the 
 
 [Chapter 2](https://github.com/CMASCenter/CARS/blob/master/docs/User_Manual/CARS_ch2_installation.md): Install the CARS
 
-[Chapter 3](https://github.com/CMASCenter/CARS/blob/master/docs/User_Manual/CARS_ch3_emission_rate_calculation.md): Emission Rate calculation
+[Chapter 3](https://github.com/CMASCenter/CARS/blob/master/docs/User_Manual/CARS_ch3_The_CARS_modules_and_configuration.md): Emission Rate calculation
 
-[Chapter 4](https://github.com/CMASCenter/CARS/blob/master/docs/User_Manual/CARS_ch4_activity_data.md): Activity data
+[Chapter 4](https://github.com/CMASCenter/CARS/blob/master/docs/User_Manual/CARS_ch4_emission_rate_calculation.md): Activity data
 
 [Chapter 5](https://github.com/CMASCenter/CARS/blob/master/docs/User_Manual/CARS_ch5_emission_factor.md): Emission factors calculation
 
@@ -19,11 +19,11 @@ The CARS is licensed as open-source python software that was developed with the 
 
 [Chapter 7](https://github.com/CMASCenter/CARS/blob/master/docs/User_Manual/CARS_ch7_shapfile_roadVKT.md): Road VKT and shapefile processes
 
-[Chapter 8](https://github.com/CMASCenter/CARS/blob/master/docs/User_Manual/CARS_ch8_CARS_output_process.md): CARS output
+[Chapter 8](https://github.com/CMASCenter/CARS/blob/master/docs/User_Manual/CARS_ch8_calculate_district_emission.md): CARS output
 
-[Chapter 9](https://github.com/CMASCenter/CARS/blob/master/docs/User_Manual/CARS_ch9_figure_output.md): Figure output
+[Chapter 9](https://github.com/CMASCenter/CARS/blob/master/docs/User_Manual/CARS_ch9_CARS_output_process.md): Figure output
 
-[Chapter 10](https://github.com/CMASCenter/CARS/blob/master/docs/User_Manual/CARS_license.md): CARS release license
+[Chapter 10](https://github.com/CMASCenter/CARS/blob/master/docs/User_Manual/CARS_ch10_Plot_figures.md): CARS release license
 
 
 ## Getting the test data for CARS

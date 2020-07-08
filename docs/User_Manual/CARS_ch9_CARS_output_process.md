@@ -1,4 +1,4 @@
-# The AQM Support Input Files in CARS
+# The chemical, temporal and reference code input tables format for CARS input
 
 ## 1. Chemical mechanism and species for the chemical transport model
 

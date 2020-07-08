@@ -7,7 +7,7 @@
 ## Install the third-party packages:
 The third-party packages can be installed by GUI (Anaconda-Navigator), or manual install in the terminal with python 3 environment. The geopandas must be verion 0.6.1.
 
-Here are the steps to install packages manually in terminal (not python console):
+Here are the steps to install packages manually in terminal with python 3 environment (not python console):
 
 1. Install geopandas:
 ```
@@ -29,8 +29,11 @@ conda install matplotlib
 ```
 conda install netCDF4
 ```
-
-## The list of variables CARS model:
+6. Install pyproj:
+```
+conda install pyproj
+```
+## The list of variables CARS operating script:
 
 1. Open and edit the file CARS_rev_07.py by text app or vim.
 2. Setup the model variables and directory in CARS python script (line 22 to 233):
@@ -40,7 +43,7 @@ conda install netCDF4
 -	src_dir: This is the source directory and it is where CARS source code is located.
 -	input_dir:  The input directory holds all the input folders, which are: activity_data; chemical_speciation; emissions_factor; metdata; shapes; and temporal_profile. These folders are default in CARS and the code will look for them. Their names were set to facilitate their identification and which files should be inside them.
 -	inter_dir: Intermediate folders is to save the intermediate files, like dataframes and binary data processed by CARS. These files are constantly accessed by CARS, and their objective is to speed up the calculations and CARS processing.
-	output_dir: The output directory is for holding the output files, reports, logs, and plots.
+- output_dir: The output directory is for holding the output files, reports, logs, and plots.
 -	met_dir: The meteorology folder is the location of the grid description file (e.g. GRIDDESC), which is used for setting the CMAQ grid, define the surrogate and create the gridded emissions.
 -	STDATE: The start date of the simulation (format YYYY-MM-DD).
 -	ENDATE: The end date of the simulation (format YYYY-MM-DD).
@@ -97,28 +100,8 @@ conda install netCDF4
 | chemical_profile          | 'CB6.csv'      |
 | speciation_CrossRef       | 'chem_profile_CrossRef.csv'      |
 
-## The list of optional variables CARS model:
-| CARS variable | Variable description|
-| :------------ |:-------------------:|
-| Deterioration_CALC        | Apply deterioration factor in EF['yes' or 'no']|
-| Deterioration_list        | Deterioration file path      |
-| Control_CLAC              | Apply control factor ['yes' or 'no']      |
-| Control_list              | Control factor input file name      |
-| future_case               | IS this a future case ['yes' or 'no']      |
-| plot_figures              | Plot figure of emissions ['yes' or 'no']      |
-| plot_24                   | Plot 24 hours gridded emissions ['yes' or 'no']|
-| adj_scale                 | Adjust the scale of plots (e.g. 0.4)      |
-| grid_size                 | Set the grid size if grid4AQM is set to 'yes'  |
-| grid4AQM                  | Process GRIDDESC to NetCDF for AQM ['yes' or 'no'] |
-| gridfile_name             | Path to the GRIDDES file   |
-| Radius_Earth              | 6370000      |
-| Datum                     | 'WGS84'      |
-| outGridShape              | Create a shape file of the Grid ['yes' or 'no']|
-
-
-
 # Run CARS model
-In the CARS model folder:
+In the CARS model folder, make sure that src folder is at the same folder with run script (CARS_rev_08_script.py):
 ```
 python CARS_rev_08_script.py
 ```
