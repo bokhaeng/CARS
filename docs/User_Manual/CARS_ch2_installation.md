@@ -11,11 +11,11 @@ Here are the steps to install packages manually in terminal with python 3 enviro
 
 1. Install geopandas:
 ```
-conda install geopandas=0.6.1
+conda install geopandas>=0.7.0
 ```
 2. Install pandas:
 ```
-conda install pandas
+conda install pandas>=1.1.2
 ```
 3. Install numpy:
 ```
@@ -31,7 +31,7 @@ conda install netCDF4
 ```
 6. Install pyproj:
 ```
-conda install pyproj
+conda install pyproj>=6.2.1
 ```
 ## The list of variables CARS operating script:
 
