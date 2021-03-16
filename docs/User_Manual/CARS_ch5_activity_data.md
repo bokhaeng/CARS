@@ -8,7 +8,7 @@ In the Process activity data module, the vehicle activity data is applied to gen
 | :-------- |:------------------:| :-----------|:---------------------------------------|
 | 1 | fuel             | character | fuel type name (e.g. gasoline, diesel) |
 | 2 | vehicle          | character | vehicle type name (e.g. sedan, truck)  |
-| 3 | engien           | character | engine type name (e.g compact, full)   |
+| 3 | engine           | character | engine type name (e.g compact, full)   |
 | 4 | daily_vkt        | real      | daily total vehicle kilometer traveled |
 | 5 | region_code      | integer(8)| regional county code (e.g. 11290127)   |
 | 6 | manufacture date | integer(8)| vehicle manufacture year (e.g.20110000)|
