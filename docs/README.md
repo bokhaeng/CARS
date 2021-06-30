@@ -5,8 +5,6 @@ Comprehensive Automobile Research System (CARS) is an open-source and python-bas
 ```
 git clone https://github.com/CMASCenter/CARS.git
 ```
-## Getting the test data for CARS
-Download data to test the CARS model from http://www.cmascenter.org
 
 ## Documentation
 [CARS User's Guide](https://github.com/CMASCenter/CARS/tree/master/docs/User_Manual/READ.md).
