@@ -29,10 +29,6 @@ conda install matplotlib
 ```
 conda install netCDF4
 ```
-6. Install pyproj:
-```
-conda install -c conda-forge pyproj=2.6.1
-```
 ## The list of variables CARS operating script:
 
 1. Open and edit the file CARS_rev_07.py by text app or vim.
