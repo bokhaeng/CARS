@@ -31,7 +31,7 @@ conda install netCDF4
 ```
 6. Install pyproj:
 ```
-conda install -c conda-forge=6.2.1
+conda install -c conda-forge pyproj=2.6.1
 ```
 ## The list of variables CARS operating script:
 
